@@ -210,6 +210,10 @@ type fakeFileSystem struct {
 	moveTarget      string
 	moveOverwrite   bool
 	moveErr         error
+	copySource      string
+	copyTarget      string
+	copyOverwrite   bool
+	copyErr         error
 }
 
 func newFakeFileSystem() *fakeFileSystem {
@@ -302,8 +306,16 @@ func (f *fakeFileSystem) Move(source string, target string, overwrite bool) erro
 	return nil
 }
 
-func (f *fakeFileSystem) Copy(_ string, _ string, _ bool) error {
-	panic("not implemented")
+func (f *fakeFileSystem) Copy(source string, target string, overwrite bool) error {
+	f.copySource = source
+	f.copyTarget = target
+	f.copyOverwrite = overwrite
+
+	if f.copyErr != nil {
+		return f.copyErr
+	}
+
+	return nil
 }
 
 func (f *fakeFileSystem) Rename(_ string, _ string, _ bool) error {
