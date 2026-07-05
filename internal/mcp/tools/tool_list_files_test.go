@@ -201,6 +201,8 @@ type fakeFileSystem struct {
 	writeContent   []byte
 	writeOverwrite bool
 	writeErr       error
+	mkdirPath      string
+	mkdirErr       error
 }
 
 func newFakeFileSystem() *fakeFileSystem {
@@ -260,8 +262,14 @@ func (f *fakeFileSystem) Write(path string, content []byte, overwrite bool) erro
 	return nil
 }
 
-func (f *fakeFileSystem) Mkdir(_ string) error {
-	panic("not implemented")
+func (f *fakeFileSystem) Mkdir(path string) error {
+	f.mkdirPath = path
+
+	if f.mkdirErr != nil {
+		return f.mkdirErr
+	}
+
+	return nil
 }
 
 func (f *fakeFileSystem) Delete(_ string, _ bool) error {
