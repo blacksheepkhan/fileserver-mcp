@@ -15,15 +15,34 @@ import (
 )
 
 func main() {
-	if len(os.Args) == 2 && os.Args[1] == "--version" {
-		fmt.Println(version.Get().String())
-		return
+	if len(os.Args) == 2 {
+		switch os.Args[1] {
+		case "--version":
+			fmt.Println(version.Get().String())
+			return
+		case "--help", "-h":
+			fmt.Print(helpText())
+			return
+		}
 	}
 
 	if err := run(context.Background()); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "fileserver-mcp: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func helpText() string {
+	return `fileserver-mcp
+
+Usage:
+  fileserver-mcp
+  fileserver-mcp --version
+  fileserver-mcp --help
+
+Environment:
+  MCP_ROOT    Root directory exposed to MCP clients
+`
 }
 
 func run(ctx context.Context) error {
