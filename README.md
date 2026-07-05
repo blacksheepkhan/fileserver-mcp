@@ -100,6 +100,7 @@ internal/
   mcp/                  MCP server, router, handlers, transport, and tools
   protocol/             JSON-RPC and MCP protocol types
   security/             Root-confined path validation
+  version/              Build and release metadata
 
 docs/
   mcp-tool-catalog.json Machine-readable MCP tool catalog
@@ -155,6 +156,46 @@ On Windows:
 go build -o build/fileserver-mcp.exe ./cmd/server
 ```
 
+## Release Builds
+
+The repository contains a manual GitHub Actions workflow for release builds:
+
+```text
+.github/workflows/release-build.yml
+```
+
+The workflow can be started from GitHub:
+
+```text
+Actions → Release Build → Run workflow
+```
+
+The workflow accepts an optional version label. This value is embedded into the generated binaries and shown by the `--version` command.
+
+Release builds currently produce the following artifacts:
+
+```text
+fileserver-mcp-linux-amd64
+fileserver-mcp-windows-amd64
+```
+
+Artifacts are uploaded by GitHub Actions and can be downloaded from the completed workflow run.
+
+Release binaries are built with:
+
+```text
+-trimpath
+-ldflags="-s -w"
+```
+
+The release workflow also embeds build metadata through linker flags:
+
+```text
+version
+commit
+date
+```
+
 ## Basic Usage
 
 Set the filesystem root:
@@ -170,6 +211,34 @@ Run the server:
 ```
 
 The process expects JSON-RPC messages on standard input and writes JSON-RPC responses to standard output.
+
+## Version Information
+
+The binary supports a dedicated version mode:
+
+```powershell
+.\build\fileserver-mcp.exe --version
+```
+
+A local development build without embedded release metadata prints default values:
+
+```text
+fileserver-mcp
+version: dev
+commit: unknown
+date: unknown
+```
+
+Release builds embed the version label, Git commit SHA, and UTC build date:
+
+```text
+fileserver-mcp
+version: v0.1.0-test
+commit: d9342ef1f1c4ebf03c2716f11d10b7fdb8dd316a
+date: 2026-07-05T20:02:54Z
+```
+
+The `--version` mode is intended for diagnostics and artifact traceability. Normal MCP operation still communicates exclusively through JSON-RPC over STDIO.
 
 ## Example JSON-RPC Request
 
@@ -236,8 +305,6 @@ Each feature should include:
 Planned hardening and extension areas:
 
 - integration tests
-- CI pipeline
-- release packaging
 - benchmark tests
 - optional read-only mode
 - search tools
@@ -251,3 +318,4 @@ Planned hardening and extension areas:
 This project is licensed under the GNU General Public License v3.0.
 
 See `LICENSE` for details.
+
