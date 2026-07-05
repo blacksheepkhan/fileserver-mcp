@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -14,21 +15,44 @@ import (
 	"github.com/blacksheepkhan/fileserver-mcp/internal/version"
 )
 
+var errInvalidCLIArguments = errors.New("invalid CLI arguments")
+
 func main() {
-	if len(os.Args) == 2 {
-		switch os.Args[1] {
-		case "--version":
-			fmt.Println(version.Get().String())
-			return
-		case "--help", "-h":
-			fmt.Print(helpText())
-			return
+	exitCode, err := runCLI(os.Args[1:])
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "fileserver-mcp: %v\n", err)
+
+		if errors.Is(err, errInvalidCLIArguments) {
+			os.Exit(2)
 		}
+
+		os.Exit(exitCode)
 	}
 
-	if err := run(context.Background()); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "fileserver-mcp: %v\n", err)
-		os.Exit(1)
+	os.Exit(exitCode)
+}
+
+func runCLI(args []string) (int, error) {
+	switch len(args) {
+	case 0:
+		if err := run(context.Background()); err != nil {
+			return 1, err
+		}
+
+		return 0, nil
+	case 1:
+		switch args[0] {
+		case "--version":
+			fmt.Println(version.Get().String())
+			return 0, nil
+		case "--help", "-h":
+			fmt.Print(helpText())
+			return 0, nil
+		default:
+			return 2, fmt.Errorf("%w: unknown argument: %s\nUse --help for usage.", errInvalidCLIArguments, args[0])
+		}
+	default:
+		return 2, fmt.Errorf("%w: too many arguments\nUse --help for usage.", errInvalidCLIArguments)
 	}
 }
 
