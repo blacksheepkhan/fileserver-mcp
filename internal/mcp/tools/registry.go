@@ -5,6 +5,7 @@ import "sync"
 // Registry stores MCP tools.
 type Registry struct {
 	tools map[string]Tool
+	order []string
 	mu    sync.RWMutex
 }
 
@@ -12,15 +13,22 @@ type Registry struct {
 func NewRegistry() *Registry {
 	return &Registry{
 		tools: make(map[string]Tool),
+		order: make([]string, 0),
 	}
 }
 
-// Register registers a tool.
+// Register registers or replaces a tool.
 func (r *Registry) Register(tool Tool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	r.tools[tool.Name()] = tool
+	name := tool.Name()
+
+	if _, exists := r.tools[name]; !exists {
+		r.order = append(r.order, name)
+	}
+
+	r.tools[name] = tool
 }
 
 // Get returns a tool by name.
@@ -32,14 +40,18 @@ func (r *Registry) Get(name string) (Tool, bool) {
 	return tool, ok
 }
 
-// List returns all registered tools.
+// List returns all registered tools in registration order.
 func (r *Registry) List() []Tool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	result := make([]Tool, 0, len(r.tools))
-	for _, tool := range r.tools {
-		result = append(result, tool)
+	result := make([]Tool, 0, len(r.order))
+
+	for _, name := range r.order {
+		tool, ok := r.tools[name]
+		if ok {
+			result = append(result, tool)
+		}
 	}
 
 	return result

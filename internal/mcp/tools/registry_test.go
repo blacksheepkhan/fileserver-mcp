@@ -43,34 +43,35 @@ func TestRegistryGetUnknownTool(t *testing.T) {
 	}
 }
 
-func TestRegistryList(t *testing.T) {
+func TestRegistryListReturnsToolsInRegistrationOrder(t *testing.T) {
 	t.Parallel()
 
 	registry := NewRegistry()
-	registry.Register(&testTool{name: "first"})
-	registry.Register(&testTool{name: "second"})
+
+	first := &testTool{name: "first"}
+	second := &testTool{name: "second"}
+	third := &testTool{name: "third"}
+
+	registry.Register(first)
+	registry.Register(second)
+	registry.Register(third)
 
 	list := registry.List()
 
-	if len(list) != 2 {
-		t.Fatalf("expected 2 tools, got %d", len(list))
+	if len(list) != 3 {
+		t.Fatalf("expected 3 tools, got %d", len(list))
 	}
 
-	names := map[string]bool{}
-	for _, tool := range list {
-		names[tool.Name()] = true
-	}
+	expected := []Tool{first, second, third}
 
-	if !names["first"] {
-		t.Fatal("expected first tool")
-	}
-
-	if !names["second"] {
-		t.Fatal("expected second tool")
+	for i, tool := range expected {
+		if list[i] != tool {
+			t.Fatalf("expected tool %d to be %#v, got %#v", i, tool, list[i])
+		}
 	}
 }
 
-func TestRegistryRegisterOverridesExistingTool(t *testing.T) {
+func TestRegistryRegisterOverridesExistingToolWithoutChangingOrder(t *testing.T) {
 	t.Parallel()
 
 	registry := NewRegistry()
@@ -80,12 +81,18 @@ func TestRegistryRegisterOverridesExistingTool(t *testing.T) {
 		description: "first",
 	}
 
+	other := &testTool{
+		name:        "other_tool",
+		description: "other",
+	}
+
 	second := &testTool{
 		name:        "test_tool",
 		description: "second",
 	}
 
 	registry.Register(first)
+	registry.Register(other)
 	registry.Register(second)
 
 	got, ok := registry.Get("test_tool")
@@ -95,6 +102,20 @@ func TestRegistryRegisterOverridesExistingTool(t *testing.T) {
 
 	if got != second {
 		t.Fatalf("expected second tool, got %#v", got)
+	}
+
+	list := registry.List()
+
+	if len(list) != 2 {
+		t.Fatalf("expected 2 tools, got %d", len(list))
+	}
+
+	if list[0] != second {
+		t.Fatalf("expected replacement to keep first position, got %#v", list[0])
+	}
+
+	if list[1] != other {
+		t.Fatalf("expected other tool to remain second, got %#v", list[1])
 	}
 }
 
