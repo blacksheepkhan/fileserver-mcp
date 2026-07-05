@@ -34,6 +34,7 @@ func run(ctx context.Context) error {
 	toolRegistry := tools.NewRegistry()
 	toolRegistry.Register(tools.NewListFilesTool(filesystem))
 	toolRegistry.Register(tools.NewReadFileTool(filesystem, cfg.Filesystem().MaxFileSize()))
+	toolRegistry.Register(tools.NewStatPathTool(filesystem))
 
 	mcpRouter := router.New()
 	mcpRouter.Register(initialize.NewHandler(cfg.Server().Name(), cfg.Server().Version()))

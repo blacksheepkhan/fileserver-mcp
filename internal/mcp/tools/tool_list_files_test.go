@@ -191,6 +191,9 @@ type fakeFileSystem struct {
 	readMaxBytes int64
 	readContent  []byte
 	readErr      error
+	statPath     string
+	statMetadata fs.Metadata
+	statErr      error
 }
 
 func newFakeFileSystem() *fakeFileSystem {
@@ -218,8 +221,14 @@ func (f *fakeFileSystem) Read(path string, maxBytes int64) ([]byte, error) {
 	return f.readContent, nil
 }
 
-func (f *fakeFileSystem) Stat(_ string) (fs.Metadata, error) {
-	panic("not implemented")
+func (f *fakeFileSystem) Stat(path string) (fs.Metadata, error) {
+	f.statPath = path
+
+	if f.statErr != nil {
+		return fs.Metadata{}, f.statErr
+	}
+
+	return f.statMetadata, nil
 }
 
 func (f *fakeFileSystem) Exists(_ string) (bool, error) {
