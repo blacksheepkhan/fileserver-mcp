@@ -184,19 +184,23 @@ func TestListFilesToolReturnsInvalidParamsForFilesystemError(t *testing.T) {
 }
 
 type fakeFileSystem struct {
-	entries      []fs.Entry
-	err          error
-	listPath     string
-	readPath     string
-	readMaxBytes int64
-	readContent  []byte
-	readErr      error
-	statPath     string
-	statMetadata fs.Metadata
-	statErr      error
-	existsPath   string
-	exists       bool
-	existsErr    error
+	entries        []fs.Entry
+	err            error
+	listPath       string
+	readPath       string
+	readMaxBytes   int64
+	readContent    []byte
+	readErr        error
+	statPath       string
+	statMetadata   fs.Metadata
+	statErr        error
+	existsPath     string
+	exists         bool
+	existsErr      error
+	writePath      string
+	writeContent   []byte
+	writeOverwrite bool
+	writeErr       error
 }
 
 func newFakeFileSystem() *fakeFileSystem {
@@ -244,8 +248,16 @@ func (f *fakeFileSystem) Exists(path string) (bool, error) {
 	return f.exists, nil
 }
 
-func (f *fakeFileSystem) Write(_ string, _ []byte, _ bool) error {
-	panic("not implemented")
+func (f *fakeFileSystem) Write(path string, content []byte, overwrite bool) error {
+	f.writePath = path
+	f.writeContent = append([]byte(nil), content...)
+	f.writeOverwrite = overwrite
+
+	if f.writeErr != nil {
+		return f.writeErr
+	}
+
+	return nil
 }
 
 func (f *fakeFileSystem) Mkdir(_ string) error {
