@@ -1,0 +1,43 @@
+package tools
+
+import (
+	"encoding/json"
+
+	"github.com/blacksheepkhan/fileserver-mcp/internal/mcp/handlers"
+	"github.com/blacksheepkhan/fileserver-mcp/internal/protocol"
+)
+
+// ListHandler handles the MCP tools/list method.
+type ListHandler struct {
+	registry *Registry
+}
+
+// NewListHandler creates a new tools/list handler.
+func NewListHandler(registry *Registry) *ListHandler {
+	return &ListHandler{
+		registry: registry,
+	}
+}
+
+// Method returns the MCP method name.
+func (h *ListHandler) Method() string {
+	return "tools/list"
+}
+
+// Handle handles the tools/list request.
+func (h *ListHandler) Handle(_ handlers.Context, _ json.RawMessage) (any, *protocol.Error) {
+	registeredTools := h.registry.List()
+
+	result := make([]protocol.Tool, 0, len(registeredTools))
+	for _, tool := range registeredTools {
+		result = append(result, protocol.Tool{
+			Name:        tool.Name(),
+			Description: tool.Description(),
+			InputSchema: tool.InputSchema(),
+		})
+	}
+
+	return map[string]any{
+		"tools": result,
+	}, nil
+}
