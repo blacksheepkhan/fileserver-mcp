@@ -212,9 +212,35 @@ Run the server:
 
 The process expects JSON-RPC messages on standard input and writes JSON-RPC responses to standard output.
 
-## Version Information
+## CLI Help and Version Information
 
-The binary supports a dedicated version mode:
+The binary supports a dedicated help mode:
+
+```powershell
+.\build\fileserver-mcp.exe --help
+```
+
+Short form:
+
+```powershell
+.\build\fileserver-mcp.exe -h
+```
+
+Example output:
+
+```text
+fileserver-mcp
+
+Usage:
+  fileserver-mcp
+  fileserver-mcp --version
+  fileserver-mcp --help
+
+Environment:
+  MCP_ROOT    Root directory exposed to MCP clients
+```
+
+The binary also supports a dedicated version mode:
 
 ```powershell
 .\build\fileserver-mcp.exe --version
@@ -318,4 +344,5 @@ Planned hardening and extension areas:
 This project is licensed under the GNU General Public License v3.0.
 
 See `LICENSE` for details.
+
 
