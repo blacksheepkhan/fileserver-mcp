@@ -6,10 +6,7 @@ import (
 
 	"github.com/blacksheepkhan/fileserver-mcp/internal/config"
 	"github.com/blacksheepkhan/fileserver-mcp/internal/fs"
-	"github.com/blacksheepkhan/fileserver-mcp/internal/mcp/initialize"
-	"github.com/blacksheepkhan/fileserver-mcp/internal/mcp/router"
 	"github.com/blacksheepkhan/fileserver-mcp/internal/mcp/server"
-	"github.com/blacksheepkhan/fileserver-mcp/internal/mcp/tools"
 )
 
 func run(ctx context.Context) error {
@@ -24,12 +21,7 @@ func run(ctx context.Context) error {
 	}
 
 	toolRegistry := createToolRegistry(filesystem, cfg.Filesystem().MaxFileSize())
-
-	mcpRouter := router.New()
-	mcpRouter.Register(initialize.NewHandler(cfg.Server().Name(), cfg.Server().Version()))
-	mcpRouter.Register(tools.NewListHandler(toolRegistry))
-	mcpRouter.Register(tools.NewCallHandler(toolRegistry))
-
+	mcpRouter := createRouter(cfg.Server().Name(), cfg.Server().Version(), toolRegistry)
 	mcpServer := server.New(os.Stdin, os.Stdout, mcpRouter)
 
 	return mcpServer.Run(ctx)
