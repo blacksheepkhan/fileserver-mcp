@@ -1,0 +1,46 @@
+﻿name: Release Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: fileserver-mcp-linux-amd64
+            output_path: build/fileserver-mcp-linux-amd64
+          - os: windows-latest
+            artifact_name: fileserver-mcp-windows-amd64
+            output_path: build/fileserver-mcp-windows-amd64.exe
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build
+        run: go build -trimpath -ldflags="-s -w" -o ${{ matrix.output_path }} ./cmd/server
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.output_path }}
+          if-no-files-found: error
