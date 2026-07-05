@@ -5,15 +5,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/blacksheepkhan/fileserver-mcp/internal/config"
+	"github.com/blacksheepkhan/fileserver-mcp/internal/fs"
 	"github.com/blacksheepkhan/fileserver-mcp/internal/mcp/initialize"
 	"github.com/blacksheepkhan/fileserver-mcp/internal/mcp/router"
 	"github.com/blacksheepkhan/fileserver-mcp/internal/mcp/server"
 	"github.com/blacksheepkhan/fileserver-mcp/internal/mcp/tools"
-)
-
-const (
-	serverName    = "fileserver-mcp"
-	serverVersion = "0.1.0-dev"
 )
 
 func main() {
@@ -24,10 +21,21 @@ func main() {
 }
 
 func run(ctx context.Context) error {
+	cfg, err := config.LoadFromEnvironment()
+	if err != nil {
+		return err
+	}
+
+	filesystem, err := fs.NewLocalFileSystem(cfg.Filesystem().RootPath())
+	if err != nil {
+		return err
+	}
+
 	toolRegistry := tools.NewRegistry()
+	toolRegistry.Register(tools.NewListFilesTool(filesystem))
 
 	mcpRouter := router.New()
-	mcpRouter.Register(initialize.NewHandler(serverName, serverVersion))
+	mcpRouter.Register(initialize.NewHandler(cfg.Server().Name(), cfg.Server().Version()))
 	mcpRouter.Register(tools.NewListHandler(toolRegistry))
 	mcpRouter.Register(tools.NewCallHandler(toolRegistry))
 
