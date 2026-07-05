@@ -470,6 +470,322 @@ func TestLocalFileSystemMkdirRejectsAbsolutePath(t *testing.T) {
 	}
 }
 
+func TestLocalFileSystemDeleteFile(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	writeTestFile(t, filepath.Join(root, "file.txt"), "content")
+
+	filesystem := mustNewLocalFileSystem(t, root)
+
+	err := filesystem.Delete("file.txt", false)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if fileExists(t, filepath.Join(root, "file.txt")) {
+		t.Fatal("expected file to be deleted")
+	}
+}
+
+func TestLocalFileSystemDeleteEmptyDirectory(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	mkdir(t, filepath.Join(root, "empty"))
+
+	filesystem := mustNewLocalFileSystem(t, root)
+
+	err := filesystem.Delete("empty", false)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if fileExists(t, filepath.Join(root, "empty")) {
+		t.Fatal("expected directory to be deleted")
+	}
+}
+
+func TestLocalFileSystemDeleteRejectsNonEmptyDirectoryWithoutRecursive(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	mkdir(t, filepath.Join(root, "dir"))
+	writeTestFile(t, filepath.Join(root, "dir", "file.txt"), "content")
+
+	filesystem := mustNewLocalFileSystem(t, root)
+
+	err := filesystem.Delete("dir", false)
+
+	if !errors.Is(err, ErrDirectoryNotEmpty) {
+		t.Fatalf("expected ErrDirectoryNotEmpty, got %v", err)
+	}
+
+	if !fileExists(t, filepath.Join(root, "dir", "file.txt")) {
+		t.Fatal("expected file to remain")
+	}
+}
+
+func TestLocalFileSystemDeleteRecursiveDirectory(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	mkdir(t, filepath.Join(root, "dir"))
+	writeTestFile(t, filepath.Join(root, "dir", "file.txt"), "content")
+
+	filesystem := mustNewLocalFileSystem(t, root)
+
+	err := filesystem.Delete("dir", true)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if fileExists(t, filepath.Join(root, "dir")) {
+		t.Fatal("expected directory to be deleted")
+	}
+}
+
+func TestLocalFileSystemDeleteRejectsTraversal(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	filesystem := mustNewLocalFileSystem(t, root)
+
+	err := filesystem.Delete("..", false)
+
+	if !errors.Is(err, security.ErrPathTraversal) {
+		t.Fatalf("expected ErrPathTraversal, got %v", err)
+	}
+}
+
+func TestLocalFileSystemMoveFile(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	writeTestFile(t, filepath.Join(root, "source.txt"), "content")
+
+	filesystem := mustNewLocalFileSystem(t, root)
+
+	err := filesystem.Move("source.txt", "target.txt", false)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if fileExists(t, filepath.Join(root, "source.txt")) {
+		t.Fatal("expected source to be removed")
+	}
+
+	content := readTestFile(t, filepath.Join(root, "target.txt"))
+	if content != "content" {
+		t.Fatalf("expected %q, got %q", "content", content)
+	}
+}
+
+func TestLocalFileSystemMoveRejectsExistingTargetWithoutOverwrite(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	writeTestFile(t, filepath.Join(root, "source.txt"), "source")
+	writeTestFile(t, filepath.Join(root, "target.txt"), "target")
+
+	filesystem := mustNewLocalFileSystem(t, root)
+
+	err := filesystem.Move("source.txt", "target.txt", false)
+
+	if !errors.Is(err, ErrFileExists) {
+		t.Fatalf("expected ErrFileExists, got %v", err)
+	}
+
+	if readTestFile(t, filepath.Join(root, "source.txt")) != "source" {
+		t.Fatal("expected source to remain unchanged")
+	}
+
+	if readTestFile(t, filepath.Join(root, "target.txt")) != "target" {
+		t.Fatal("expected target to remain unchanged")
+	}
+}
+
+func TestLocalFileSystemMoveOverwritesExistingTarget(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	writeTestFile(t, filepath.Join(root, "source.txt"), "source")
+	writeTestFile(t, filepath.Join(root, "target.txt"), "target")
+
+	filesystem := mustNewLocalFileSystem(t, root)
+
+	err := filesystem.Move("source.txt", "target.txt", true)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if fileExists(t, filepath.Join(root, "source.txt")) {
+		t.Fatal("expected source to be moved")
+	}
+
+	if readTestFile(t, filepath.Join(root, "target.txt")) != "source" {
+		t.Fatal("expected target to contain source content")
+	}
+}
+
+func TestLocalFileSystemMoveRejectsTraversalSource(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	filesystem := mustNewLocalFileSystem(t, root)
+
+	err := filesystem.Move("..", "target.txt", false)
+
+	if !errors.Is(err, security.ErrPathTraversal) {
+		t.Fatalf("expected ErrPathTraversal, got %v", err)
+	}
+}
+
+func TestLocalFileSystemMoveRejectsTraversalTarget(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	writeTestFile(t, filepath.Join(root, "source.txt"), "content")
+
+	filesystem := mustNewLocalFileSystem(t, root)
+
+	err := filesystem.Move("source.txt", "..", false)
+
+	if !errors.Is(err, security.ErrPathTraversal) {
+		t.Fatalf("expected ErrPathTraversal, got %v", err)
+	}
+}
+
+func TestLocalFileSystemCopyFile(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	writeTestFile(t, filepath.Join(root, "source.txt"), "content")
+
+	filesystem := mustNewLocalFileSystem(t, root)
+
+	err := filesystem.Copy("source.txt", "target.txt", false)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if readTestFile(t, filepath.Join(root, "source.txt")) != "content" {
+		t.Fatal("expected source to remain unchanged")
+	}
+
+	if readTestFile(t, filepath.Join(root, "target.txt")) != "content" {
+		t.Fatal("expected target to contain copied content")
+	}
+}
+
+func TestLocalFileSystemCopyRejectsDirectory(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	mkdir(t, filepath.Join(root, "source-dir"))
+
+	filesystem := mustNewLocalFileSystem(t, root)
+
+	err := filesystem.Copy("source-dir", "target-dir", false)
+
+	if !errors.Is(err, ErrCopyDirectoryUnsupported) {
+		t.Fatalf("expected ErrCopyDirectoryUnsupported, got %v", err)
+	}
+}
+
+func TestLocalFileSystemCopyRejectsExistingTargetWithoutOverwrite(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	writeTestFile(t, filepath.Join(root, "source.txt"), "source")
+	writeTestFile(t, filepath.Join(root, "target.txt"), "target")
+
+	filesystem := mustNewLocalFileSystem(t, root)
+
+	err := filesystem.Copy("source.txt", "target.txt", false)
+
+	if !errors.Is(err, ErrFileExists) {
+		t.Fatalf("expected ErrFileExists, got %v", err)
+	}
+
+	if readTestFile(t, filepath.Join(root, "target.txt")) != "target" {
+		t.Fatal("expected target to remain unchanged")
+	}
+}
+
+func TestLocalFileSystemCopyOverwritesExistingTarget(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	writeTestFile(t, filepath.Join(root, "source.txt"), "source")
+	writeTestFile(t, filepath.Join(root, "target.txt"), "target")
+
+	filesystem := mustNewLocalFileSystem(t, root)
+
+	err := filesystem.Copy("source.txt", "target.txt", true)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if readTestFile(t, filepath.Join(root, "source.txt")) != "source" {
+		t.Fatal("expected source to remain unchanged")
+	}
+
+	if readTestFile(t, filepath.Join(root, "target.txt")) != "source" {
+		t.Fatal("expected target to contain source content")
+	}
+}
+
+func TestLocalFileSystemCopyRejectsTraversalSource(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	filesystem := mustNewLocalFileSystem(t, root)
+
+	err := filesystem.Copy("..", "target.txt", false)
+
+	if !errors.Is(err, security.ErrPathTraversal) {
+		t.Fatalf("expected ErrPathTraversal, got %v", err)
+	}
+}
+
+func TestLocalFileSystemCopyRejectsTraversalTarget(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	writeTestFile(t, filepath.Join(root, "source.txt"), "content")
+
+	filesystem := mustNewLocalFileSystem(t, root)
+
+	err := filesystem.Copy("source.txt", "..", false)
+
+	if !errors.Is(err, security.ErrPathTraversal) {
+		t.Fatalf("expected ErrPathTraversal, got %v", err)
+	}
+}
+
+func TestLocalFileSystemRenameFile(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	writeTestFile(t, filepath.Join(root, "old.txt"), "content")
+
+	filesystem := mustNewLocalFileSystem(t, root)
+
+	err := filesystem.Rename("old.txt", "new.txt", false)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if fileExists(t, filepath.Join(root, "old.txt")) {
+		t.Fatal("expected old file to be removed")
+	}
+
+	if readTestFile(t, filepath.Join(root, "new.txt")) != "content" {
+		t.Fatal("expected renamed file content to match")
+	}
+}
+
 func mustNewLocalFileSystem(t *testing.T, root string) *LocalFileSystem {
 	t.Helper()
 
@@ -506,6 +822,23 @@ func mkdir(t *testing.T, path string) {
 	if err := os.MkdirAll(path, 0o700); err != nil {
 		t.Fatalf("failed to create test directory: %v", err)
 	}
+}
+
+func fileExists(t *testing.T, path string) bool {
+	t.Helper()
+
+	_, err := os.Stat(path)
+	if err == nil {
+		return true
+	}
+
+	if errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+
+	t.Fatalf("failed to stat path: %v", err)
+
+	return false
 }
 
 func findEntry(t *testing.T, entries []Entry, name string) Entry {
