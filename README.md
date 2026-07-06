@@ -156,6 +156,21 @@ On Windows:
 go build -o build/fileserver-mcp.exe ./cmd/server
 ```
 
+Run the JSON-RPC smoke test on Windows:
+
+```powershell
+.\scripts\smoke-jsonrpc.ps1
+```
+
+The smoke test starts the built Windows binary and sends JSON-RPC requests through STDIO. It verifies that the server responds to:
+
+```text
+initialize
+tools/list
+```
+
+The script also validates the negotiated protocol version and the registered MCP tool list.
+
 ## Release Builds
 
 The repository contains a manual GitHub Actions workflow for release builds:
@@ -330,7 +345,7 @@ Each feature should include:
 
 Planned hardening and extension areas:
 
-- integration tests
+- additional integration tests
 - benchmark tests
 - optional read-only mode
 - search tools
@@ -344,5 +359,4 @@ Planned hardening and extension areas:
 This project is licensed under the GNU General Public License v3.0.
 
 See `LICENSE` for details.
-
 
