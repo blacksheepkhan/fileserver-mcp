@@ -21,10 +21,6 @@ type requestValidationError struct {
 	message string
 }
 
-func validateRequestMessage(message []byte) (validatedRequest, *requestValidationError) {
-	return validateRequestMessageWithLimits(message, 0)
-}
-
 func validateRequestMessageWithLimits(message []byte, maxArgumentBytes int64) (validatedRequest, *requestValidationError) {
 	if !json.Valid(message) {
 		return validatedRequest{}, newRequestValidationError(nullID(), protocol.ErrParseError, "parse error")
