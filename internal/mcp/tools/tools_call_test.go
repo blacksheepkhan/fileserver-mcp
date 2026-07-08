@@ -50,7 +50,7 @@ func TestCallHandlerCallsRegisteredTool(t *testing.T) {
 	}
 }
 
-func TestCallHandlerReturnsMethodNotFoundForUnknownTool(t *testing.T) {
+func TestCallHandlerReturnsInvalidParamsForUnknownTool(t *testing.T) {
 	t.Parallel()
 
 	handler := NewCallHandler(NewRegistry())
@@ -68,8 +68,8 @@ func TestCallHandlerReturnsMethodNotFoundForUnknownTool(t *testing.T) {
 		t.Fatal("expected rpc error")
 	}
 
-	if rpcErr.Code != protocol.ErrMethodNotFound {
-		t.Fatalf("expected ErrMethodNotFound, got %d", rpcErr.Code)
+	if rpcErr.Code != protocol.ErrInvalidParams {
+		t.Fatalf("expected ErrInvalidParams, got %d", rpcErr.Code)
 	}
 }
 
@@ -116,6 +116,94 @@ func TestCallHandlerReturnsInvalidParamsForMissingName(t *testing.T) {
 
 	if rpcErr.Code != protocol.ErrInvalidParams {
 		t.Fatalf("expected ErrInvalidParams, got %d", rpcErr.Code)
+	}
+}
+
+func TestCallHandlerReturnsInvalidParamsForInvalidParamsShape(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]json.RawMessage{
+		"missing params": nil,
+		"null params":    json.RawMessage(`null`),
+		"string params":  json.RawMessage(`"bad"`),
+		"array params":   json.RawMessage(`[]`),
+		"number params":  json.RawMessage(`1`),
+		"bool params":    json.RawMessage(`true`),
+		"non-string name": json.RawMessage(
+			`{"name":123,"arguments":{}}`,
+		),
+		"empty name":           json.RawMessage(`{"name":"","arguments":{}}`),
+		"non-object arguments": json.RawMessage(`{"name":"test_tool","arguments":"bad"}`),
+	}
+
+	for name, rawParams := range testCases {
+		name := name
+		rawParams := rawParams
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			handler := NewCallHandler(NewRegistry())
+
+			result, rpcErr := handler.Handle(handlers.Context{}, rawParams)
+			if result != nil {
+				t.Fatalf("expected nil result, got %#v", result)
+			}
+
+			if rpcErr == nil {
+				t.Fatal("expected rpc error")
+			}
+
+			if rpcErr.Code != protocol.ErrInvalidParams {
+				t.Fatalf("expected ErrInvalidParams, got %d", rpcErr.Code)
+			}
+
+			if rpcErr.Message != "invalid params" {
+				t.Fatalf("expected generic invalid params message, got %q", rpcErr.Message)
+			}
+		})
+	}
+}
+
+func TestCallHandlerTreatsMissingAndNullArgumentsAsEmptyObject(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]json.RawMessage{
+		"missing arguments": json.RawMessage(`{"name":"test_tool"}`),
+		"null arguments":    json.RawMessage(`{"name":"test_tool","arguments":null}`),
+	}
+
+	for name, rawParams := range testCases {
+		name := name
+		rawParams := rawParams
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			registry := NewRegistry()
+			tool := &testTool{
+				name: "test_tool",
+				result: map[string]any{
+					"ok": true,
+				},
+			}
+			registry.Register(tool)
+
+			handler := NewCallHandler(registry)
+
+			result, rpcErr := handler.Handle(handlers.Context{}, rawParams)
+			if rpcErr != nil {
+				t.Fatalf("expected no error, got %v", rpcErr)
+			}
+
+			if result == nil {
+				t.Fatal("expected result")
+			}
+
+			if string(tool.arguments) != `{}` {
+				t.Fatalf("expected empty object arguments, got %s", string(tool.arguments))
+			}
+		})
 	}
 }
 

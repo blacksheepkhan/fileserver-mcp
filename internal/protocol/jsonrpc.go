@@ -23,7 +23,7 @@ type Notification struct {
 // Response represents a JSON-RPC 2.0 response.
 type Response struct {
 	JSONRPC string          `json:"jsonrpc"`
-	ID      json.RawMessage `json:"id,omitempty"`
+	ID      json.RawMessage `json:"id"`
 	Result  any             `json:"result,omitempty"`
 	Error   *Error          `json:"error,omitempty"`
 }

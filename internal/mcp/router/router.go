@@ -37,7 +37,7 @@ func (r *Router) Dispatch(method string, ctx handlers.Context, params []byte) (a
 	if !ok {
 		return nil, &protocol.Error{
 			Code:    protocol.ErrMethodNotFound,
-			Message: "method not found: " + method,
+			Message: "method not found",
 		}
 	}
 

@@ -157,6 +157,46 @@ func TestResponseMarshalError(t *testing.T) {
 	}
 }
 
+func TestResponseMarshalErrorWithNullID(t *testing.T) {
+	t.Parallel()
+
+	response := Response{
+		JSONRPC: JSONRPCVersion,
+		ID:      json.RawMessage(`null`),
+		Error: &Error{
+			Code:    ErrInvalidRequest,
+			Message: "invalid request",
+		},
+	}
+
+	encoded, err := json.Marshal(response)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(encoded, &decoded); err != nil {
+		t.Fatalf("expected valid json, got %v", err)
+	}
+
+	if _, exists := decoded["id"]; !exists {
+		t.Fatal("expected id field")
+	}
+
+	if decoded["id"] != nil {
+		t.Fatalf("expected null id, got %#v", decoded["id"])
+	}
+
+	errorObject, ok := decoded["error"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected error object, got %#v", decoded["error"])
+	}
+
+	if errorObject["message"] != "invalid request" {
+		t.Fatalf("expected invalid request message, got %#v", errorObject["message"])
+	}
+}
+
 func TestErrorMarshalWithData(t *testing.T) {
 	t.Parallel()
 

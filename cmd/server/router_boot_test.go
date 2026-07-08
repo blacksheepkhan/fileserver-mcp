@@ -71,7 +71,7 @@ func TestCreateRouterRegistersToolsCall(t *testing.T) {
 	}
 
 	if protocolErr.Code == protocol.ErrMethodNotFound {
-		t.Fatalf("expected tools/call to be registered, got method not found: %+v", protocolErr)
+		t.Fatalf("expected tools/call to be registered, got method-not-found error: %+v", protocolErr)
 	}
 
 	if protocolErr.Code != protocol.ErrInvalidParams {
@@ -93,8 +93,8 @@ func TestCreateRouterRejectsWriteToolCallWhenReadOnly(t *testing.T) {
 		t.Fatal("expected protocol error for disabled write tool")
 	}
 
-	if protocolErr.Code != protocol.ErrMethodNotFound {
-		t.Fatalf("expected method not found for disabled write tool, got: %+v", protocolErr)
+	if protocolErr.Code != protocol.ErrInvalidParams {
+		t.Fatalf("expected invalid params for disabled write tool, got: %+v", protocolErr)
 	}
 }
 

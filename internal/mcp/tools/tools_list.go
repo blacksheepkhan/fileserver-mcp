@@ -25,7 +25,11 @@ func (h *ListHandler) Method() string {
 }
 
 // Handle handles the tools/list request.
-func (h *ListHandler) Handle(_ handlers.Context, _ json.RawMessage) (any, *protocol.Error) {
+func (h *ListHandler) Handle(_ handlers.Context, rawParams json.RawMessage) (any, *protocol.Error) {
+	if !isMissingNullOrObject(rawParams) {
+		return nil, invalidParamsError()
+	}
+
 	registeredTools := h.registry.List()
 
 	result := make([]protocol.Tool, 0, len(registeredTools))

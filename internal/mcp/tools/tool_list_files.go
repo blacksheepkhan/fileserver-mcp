@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/blacksheepkhan/fileserver-mcp/internal/fs"
 	"github.com/blacksheepkhan/fileserver-mcp/internal/protocol"
@@ -101,7 +100,7 @@ type listFilesResult struct {
 
 func mapFilesystemError(err error) *protocol.Error {
 	code := protocol.ErrInternalError
-	message := fmt.Sprintf("filesystem error: %v", err)
+	message := "filesystem error: internal error"
 
 	if errors.Is(err, security.ErrAbsolutePath) ||
 		errors.Is(err, security.ErrPathTraversal) ||
