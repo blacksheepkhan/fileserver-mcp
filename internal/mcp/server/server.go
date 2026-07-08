@@ -44,40 +44,68 @@ func (s *Server) Run(ctx context.Context) error {
 			return err
 		}
 
-		var request protocol.Request
-		if err := json.Unmarshal(message, &request); err != nil {
-			if writeErr := s.writeError(nil, protocol.ErrParseError, "invalid json"); writeErr != nil {
+		request, validationErr := validateRequestMessage(message)
+		if validationErr != nil {
+			if writeErr := s.writeError(validationErr.id, validationErr.code, validationErr.message); writeErr != nil {
 				return writeErr
 			}
 			continue
 		}
 
-		result, rpcErr := s.router.Dispatch(
-			request.Method,
-			handlers.Context{Context: ctx},
-			request.Params,
-		)
-
-		if rpcErr != nil {
-			if writeErr := s.writeError(request.ID, rpcErr.Code, rpcErr.Message); writeErr != nil {
-				return writeErr
-			}
+		if request.notification {
 			continue
 		}
 
-		response := protocol.Response{
-			JSONRPC: protocol.JSONRPCVersion,
-			ID:      request.ID,
-			Result:  result,
-		}
-
+		response := s.handleRequest(ctx, request)
 		if err := s.transport.WriteMessage(response); err != nil {
 			return err
 		}
 	}
 }
 
+func (s *Server) handleRequest(ctx context.Context, request validatedRequest) (response protocol.Response) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			response = protocol.Response{
+				JSONRPC: protocol.JSONRPCVersion,
+				ID:      request.id,
+				Error: &protocol.Error{
+					Code:    protocol.ErrInternalError,
+					Message: "internal error",
+				},
+			}
+		}
+	}()
+
+	result, rpcErr := s.router.Dispatch(
+		request.method,
+		handlers.Context{Context: ctx},
+		request.params,
+	)
+
+	if rpcErr != nil {
+		return protocol.Response{
+			JSONRPC: protocol.JSONRPCVersion,
+			ID:      request.id,
+			Error: &protocol.Error{
+				Code:    rpcErr.Code,
+				Message: rpcErr.Message,
+			},
+		}
+	}
+
+	return protocol.Response{
+		JSONRPC: protocol.JSONRPCVersion,
+		ID:      request.id,
+		Result:  result,
+	}
+}
+
 func (s *Server) writeError(id json.RawMessage, code int, message string) error {
+	if len(id) == 0 {
+		id = nullID()
+	}
+
 	response := protocol.Response{
 		JSONRPC: protocol.JSONRPCVersion,
 		ID:      id,

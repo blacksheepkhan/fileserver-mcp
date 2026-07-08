@@ -28,19 +28,16 @@ The backlog is maintained as part of the normal sprint workflow. New tasks disco
 
 ## Current Sprint
 
-### Sprint 3.37 - Hidden, UNC, symlink, junction, and reparse policy
+### Sprint 3.38 - JSON-RPC validation and error behavior
 
 | ID | Status | Task | Reason | Notes |
 |---|---|---|---|---|
-| BL-050 | Done | Enforce `MCP_ALLOW_HIDDEN_FILES` in filesystem access | Config is parsed, but hidden-file policy may not be applied | Sprint 3.37 denies dot-paths and Windows hidden attributes by default; `list_files` filters hidden entries |
-| BL-051 | Done | Enforce `MCP_ALLOW_UNC_PATHS` on Windows roots and paths | Config is parsed, but UNC path policy may not be applied | Sprint 3.37 rejects UNC roots and UNC-style user paths unless explicitly allowed |
-| BL-052 | Done | Enforce `MCP_FOLLOW_SYMLINKS` consistently | Config is parsed, but filesystem operations may still follow symlinks | Sprint 3.37 denies symlink components by default, optionally follows classic symlinks with effective root containment, and keeps junction/reparse points denied |
+| BL-055 | Done | Harden JSON-RPC request validation | Current validation is minimal | Sprint 3.38 validates JSON-RPC envelopes, IDs, notifications, batch rejection, method params, generic protocol errors, and panic handling |
 
 ## Upcoming Sprints
 
 | Sprint | Backlog IDs | Scope | Notes |
 |---|---|---|---|
-| Sprint 3.38 | BL-055 | JSON-RPC validation and error behavior | Validate request shape, IDs, methods, params, notifications, and invalid request handling |
 | Sprint 3.39 | BL-008, BL-011, BL-034, BL-035 | Limits, logging, safe defaults, and secrets-aware behavior | Include read/list response limits and audit-oriented stderr logging |
 | Sprint 3.40 | BL-001, BL-002, BL-040 | Windows/Linux test matrix and smoke tests | The earlier Linux JSON-RPC smoke-test CI item is deferred into Sprint 3.40 |
 | Sprint 3.41 | BL-037, BL-038, BL-039 | Codex read-only activation preparation, without activation | Configuration examples, troubleshooting, and activation checklist |
@@ -181,7 +178,7 @@ Documentation is part of the project deliverable and should be updated continuou
 | BL-052 | Done | Enforce `MCP_FOLLOW_SYMLINKS` consistently | Config is parsed, but filesystem operations may still follow symlinks | Completed in Sprint 3.37 with symlink deny/follow policy and junction/reparse default denial |
 | BL-053 | Done | Close symlink escape risk from configured root | Symlinks inside the root may resolve outside the allowed tree | Completed in Sprint 3.36 for effective existing paths and effective create-parent validation |
 | BL-054 | Done | Replace purely lexical path checks with real-path validation | Lexical root checks alone are insufficient for filesystem security | Completed in Sprint 3.36 with lexical checks followed by evaluated root containment checks |
-| BL-055 | Ready | Harden JSON-RPC request validation | Current validation is minimal | Validate JSON-RPC version, method shape, IDs, notifications, and invalid request handling |
+| BL-055 | Done | Harden JSON-RPC request validation | Current validation is minimal | Completed in Sprint 3.38 with envelope validation, explicit `id:null`, notification no-response behavior, batch rejection, method-specific params validation, and generic protocol errors |
 
 ## Done Summary
 
@@ -206,3 +203,4 @@ This section is intentionally not a full commit history. Detailed chronological 
 | BL-D015 | Done | Add filesystem write capability gating | Sprint 3.35 | Read-only mode exposes only `list_files`, `read_file`, `stat_path`, and `exists_path` |
 | BL-D016 | Done | Add root, realpath, and traversal hardening | Sprint 3.36 | Existing paths and create-target parents are evaluated and confined to the effective root |
 | BL-D017 | Done | Add hidden, UNC, symlink, junction, and reparse policy | Sprint 3.37 | Deny-by-default policy is wired through config, `PathGuard`, filesystem operations, and MCP error mapping |
+| BL-D018 | Done | Harden JSON-RPC validation and error behavior | Sprint 3.38 | Request envelopes, IDs, notifications, unsupported batches, method params, unknown tools, and panic boundaries are validated with generic JSON-RPC errors |

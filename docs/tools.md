@@ -40,7 +40,7 @@ stat_path
 exists_path
 ```
 
-Sprint 3.35 adds read-only tool capability gating. In read-only mode, write-capable tools are not registered. Direct `tools/call` requests for `write_file`, `mkdir`, `delete_path`, `move_path`, `copy_path`, or `rename_path` return a tool-not-found error.
+Sprint 3.35 adds read-only tool capability gating. In read-only mode, write-capable tools are not registered. Direct `tools/call` requests for `write_file`, `mkdir`, `delete_path`, `move_path`, `copy_path`, or `rename_path` return a generic Invalid params error, matching unknown tool names without revealing whether the tool exists in another mode.
 
 ## Common Error Behavior
 
@@ -57,11 +57,15 @@ Common causes:
 
 - malformed JSON arguments
 - missing required arguments
+- unknown tool name
+- direct call for a write-capable tool while `MCP_READ_ONLY=true`
 - invalid path
 - path outside the configured root
 - hidden, UNC, symlink, junction, or reparse policy denial
 - target already exists and `overwrite` is `false`
 - directory is not empty and `recursive` is `false`
+
+Protocol-level JSON-RPC errors are generic. Invalid request envelopes return `invalid request`, unknown JSON-RPC methods return `method not found`, invalid method params return `invalid params`, and unexpected server errors return `internal error`.
 
 ---
 

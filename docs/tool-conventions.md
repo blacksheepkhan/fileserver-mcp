@@ -8,6 +8,8 @@ This document defines the conventions used by `fileserver-mcp` for exposing file
 
 Standard output is reserved for JSON-RPC protocol messages. Diagnostic output, logs, and process errors must be written to standard error.
 
+JSON-RPC request envelopes are validated before dispatch. Requests must be JSON objects with `jsonrpc` set to `"2.0"`, a non-empty string `method`, and an optional `id` of type string, number, or null. Unsupported batch requests are rejected. Notifications do not receive responses and are not used to execute tools.
+
 ## Filesystem Root
 
 All filesystem tools operate below the configured root directory.
@@ -134,11 +136,23 @@ Common cases:
 |---|---:|
 | malformed tool arguments | `-32602` |
 | missing required argument | `-32602` |
+| unknown tool name | `-32602` |
+| read-only-gated write tool name | `-32602` |
 | invalid filesystem operation | `-32602` |
 
 Filesystem errors are mapped centrally before being returned to the client.
 
 Tools should not expose raw operating system errors directly unless they are intentionally wrapped and normalized.
+
+Protocol-level errors use generic JSON-RPC messages:
+
+| Case | JSON-RPC code | Message |
+|---|---:|---|
+| invalid JSON | `-32700` | `parse error` |
+| invalid request envelope | `-32600` | `invalid request` |
+| unknown JSON-RPC method | `-32601` | `method not found` |
+| invalid method params | `-32602` | `invalid params` |
+| unexpected internal failure | `-32603` | `internal error` |
 
 ## Overwrite Behavior
 

@@ -175,6 +175,22 @@ When `MCP_ALLOW_HIDDEN_FILES=false`, path components whose names start with `.` 
 
 When `MCP_ALLOW_HIDDEN_FILES=true`, hidden and dotfile paths are allowed if all other policies pass.
 
+## JSON-RPC Boundary
+
+Sprint 3.38 adds JSON-RPC request validation before MCP dispatch.
+
+Requests must be object-shaped JSON-RPC 2.0 messages. Invalid JSON, invalid request envelopes, unsupported batch requests, invalid IDs, missing methods, and malformed method params are rejected with generic JSON-RPC errors.
+
+Responses for parse errors or invalid requests without a valid request ID include:
+
+```json
+{"jsonrpc":"2.0","id":null,"error":{"code":-32600,"message":"invalid request"}}
+```
+
+Notifications do not receive JSON-RPC responses. `notifications/initialized` is accepted as a no-op lifecycle notification. Other notifications are not executed, so `tools/call` without an `id` cannot trigger filesystem operations.
+
+Unexpected handler panics are contained at the request boundary and returned as generic Internal error responses when the request requires a response.
+
 ## Security Testing
 
 Security tests currently cover:
@@ -192,6 +208,10 @@ Security tests currently cover:
 - create-target parent validation
 - safe path metadata
 - filesystem traversal rejection across list/read/stat/exists/write/mkdir/delete/move/copy
+- JSON-RPC envelope validation
+- explicit `id:null` error responses
+- notification no-response and no tool execution behavior
+- generic protocol error messages
 
 ## Future Security Work
 

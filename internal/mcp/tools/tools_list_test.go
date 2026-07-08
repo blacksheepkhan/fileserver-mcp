@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/blacksheepkhan/fileserver-mcp/internal/mcp/handlers"
+	"github.com/blacksheepkhan/fileserver-mcp/internal/protocol"
 )
 
 func TestListHandlerReturnsRegisteredTools(t *testing.T) {
@@ -91,5 +92,74 @@ func TestListHandlerMethod(t *testing.T) {
 
 	if handler.Method() != "tools/list" {
 		t.Fatalf("expected tools/list, got %q", handler.Method())
+	}
+}
+
+func TestListHandlerAcceptsMissingNullAndObjectParams(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]json.RawMessage{
+		"missing": nil,
+		"null":    json.RawMessage(`null`),
+		"object":  json.RawMessage(`{"extra":true}`),
+	}
+
+	for name, rawParams := range testCases {
+		name := name
+		rawParams := rawParams
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			handler := NewListHandler(NewRegistry())
+
+			result, rpcErr := handler.Handle(handlers.Context{}, rawParams)
+			if rpcErr != nil {
+				t.Fatalf("expected no error, got %v", rpcErr)
+			}
+
+			if result == nil {
+				t.Fatal("expected result")
+			}
+		})
+	}
+}
+
+func TestListHandlerReturnsInvalidParamsForInvalidParamsShape(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]json.RawMessage{
+		"string": json.RawMessage(`"bad"`),
+		"array":  json.RawMessage(`[]`),
+		"number": json.RawMessage(`1`),
+		"bool":   json.RawMessage(`true`),
+	}
+
+	for name, rawParams := range testCases {
+		name := name
+		rawParams := rawParams
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			handler := NewListHandler(NewRegistry())
+
+			result, rpcErr := handler.Handle(handlers.Context{}, rawParams)
+			if result != nil {
+				t.Fatalf("expected nil result, got %#v", result)
+			}
+
+			if rpcErr == nil {
+				t.Fatal("expected rpc error")
+			}
+
+			if rpcErr.Code != protocol.ErrInvalidParams {
+				t.Fatalf("expected ErrInvalidParams, got %d", rpcErr.Code)
+			}
+
+			if rpcErr.Message != "invalid params" {
+				t.Fatalf("expected generic invalid params message, got %q", rpcErr.Message)
+			}
+		})
 	}
 }

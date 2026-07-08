@@ -24,6 +24,12 @@ Run tests for a specific package:
 go test ./internal/fs
 ```
 
+Run focused MCP protocol tests:
+
+```bash
+go test -v ./internal/protocol ./internal/mcp/server ./internal/mcp/router ./internal/mcp/tools ./internal/mcp/initialize
+```
+
 Run tests with coverage:
 
 ```bash
@@ -89,7 +95,16 @@ Security tests must cover:
 
 ### Integration Tests
 
-Integration tests will be added once the MCP server can be started over STDIO and exercised through JSON-RPC messages.
+JSON-RPC smoke tests exercise the built server binary over STDIO.
+
+On Windows:
+
+```powershell
+.\scripts\smoke-jsonrpc.ps1
+.\scripts\smoke-jsonrpc-negative.ps1
+```
+
+The default smoke test validates `initialize` and `tools/list`. The negative smoke test validates malformed JSON, unknown methods, invalid `tools/call` params, and notification no-response behavior.
 
 ### Benchmarks
 
@@ -113,5 +128,9 @@ Currently tested:
 - `internal/config`
 - `internal/security`
 - `internal/fs`
-
-MCP packages currently contain skeleton code and will receive tests in the MCP Core sprint.
+- `internal/protocol`
+- `internal/mcp/server`
+- `internal/mcp/router`
+- `internal/mcp/transport`
+- `internal/mcp/initialize`
+- `internal/mcp/tools`

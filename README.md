@@ -6,7 +6,7 @@ It exposes secure filesystem operations to MCP-compatible clients through JSON-R
 
 ## Status
 
-The project currently implements the core MCP server loop, JSON-RPC routing, tool discovery, tool execution, filesystem abstraction, root-confined path handling, read-only tool gating, tests, and documentation.
+The project currently implements the core MCP server loop, JSON-RPC routing and request validation, tool discovery, tool execution, filesystem abstraction, root-confined path handling, read-only tool gating, tests, and documentation.
 
 Implemented tools:
 
@@ -51,6 +51,8 @@ tools/call
 ```
 
 Filesystem operations are exposed as MCP tools and invoked through `tools/call`.
+
+JSON-RPC request envelopes are validated before dispatch. Unsupported batch requests, invalid protocol versions, missing or invalid methods, invalid IDs, and malformed method params are rejected with generic JSON-RPC errors. Parse errors and invalid requests without a valid request ID serialize `id:null`. Notifications do not receive responses; `notifications/initialized` is accepted as a no-op, and other notifications are not executed.
 
 ## Security Model
 
@@ -104,7 +106,7 @@ stat_path
 exists_path
 ```
 
-Write-capable tools are not registered in read-only mode, so direct `tools/call` requests for `write_file`, `mkdir`, `delete_path`, `move_path`, `copy_path`, or `rename_path` are rejected as unknown tools.
+Write-capable tools are not registered in read-only mode, so direct `tools/call` requests for `write_file`, `mkdir`, `delete_path`, `move_path`, `copy_path`, or `rename_path` are rejected with a generic Invalid params error without revealing whether the tool exists in another mode.
 
 ## Tool Documentation
 
@@ -228,6 +230,14 @@ tools/list
 ```
 
 The script also validates the negotiated protocol version and the registered MCP tool list.
+
+Run the negative JSON-RPC smoke test on Windows:
+
+```powershell
+.\scripts\smoke-jsonrpc-negative.ps1
+```
+
+The negative smoke test verifies malformed JSON, unknown methods, invalid `tools/call` params, and notification no-response behavior.
 
 ## Release Builds
 

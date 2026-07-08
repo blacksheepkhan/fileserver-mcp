@@ -29,27 +29,14 @@ func (h *CallHandler) Method() string {
 
 // Handle executes the requested tool.
 func (h *CallHandler) Handle(ctx handlers.Context, rawParams json.RawMessage) (any, *protocol.Error) {
-	var params callParams
-	if err := json.Unmarshal(rawParams, &params); err != nil {
-		return nil, &protocol.Error{
-			Code:    protocol.ErrInvalidParams,
-			Message: "invalid params",
-		}
-	}
-
-	if params.Name == "" {
-		return nil, &protocol.Error{
-			Code:    protocol.ErrInvalidParams,
-			Message: "missing tool name",
-		}
+	params, rpcErr := validateCallParams(rawParams)
+	if rpcErr != nil {
+		return nil, rpcErr
 	}
 
 	tool, ok := h.registry.Get(params.Name)
 	if !ok {
-		return nil, &protocol.Error{
-			Code:    protocol.ErrMethodNotFound,
-			Message: "tool not found",
-		}
+		return nil, invalidParamsError()
 	}
 
 	execCtx := ctx.Context
@@ -63,4 +50,32 @@ func (h *CallHandler) Handle(ctx handlers.Context, rawParams json.RawMessage) (a
 type callParams struct {
 	Name      string          `json:"name"`
 	Arguments json.RawMessage `json:"arguments,omitempty"`
+}
+
+func validateCallParams(rawParams json.RawMessage) (callParams, *protocol.Error) {
+	if !isJSONObject(rawParams) {
+		return callParams{}, invalidParamsError()
+	}
+
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(rawParams, &fields); err != nil {
+		return callParams{}, invalidParamsError()
+	}
+
+	name, ok := stringField(fields, "name")
+	if !ok {
+		return callParams{}, invalidParamsError()
+	}
+
+	arguments, hasArguments := fields["arguments"]
+	if !hasArguments || isJSONNull(arguments) {
+		arguments = json.RawMessage(`{}`)
+	} else if !isJSONObject(arguments) {
+		return callParams{}, invalidParamsError()
+	}
+
+	return callParams{
+		Name:      name,
+		Arguments: arguments,
+	}, nil
 }
