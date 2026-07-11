@@ -1,6 +1,6 @@
 # Technical Rename to FlashGate MCP
 
-Date: 2026-07-11  
+Date: 2026-07-11
 Sprint: 3.42 – Technical project rename to FlashGate MCP
 
 The public project name was established as FlashGate MCP in Sprint 3.41. The GitHub repository rename, Git remote update, and local folder rename were completed manually before this code rename. Sprint 3.42 completes the corresponding repository-internal technical rename.
