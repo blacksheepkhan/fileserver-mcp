@@ -21,8 +21,8 @@ FlashGate MCP uses repository `blacksheepkhan/flashgate-mcp`, local directory `f
 | Status | Meaning |
 |---|---|
 | Ready | Clear and ready for implementation |
-| Planned | Accepted work that still needs implementation or refinement |
-| Later | Accepted but intentionally deferred |
+| Planned | Accepted work required for Version 1.0 unless its task text explicitly defines a continuous gate |
+| Later | Accepted post-Version-1.0 work; not required for the initial stable release |
 | Blocked | Waiting for a decision or dependency |
 | Done | Completed and retained for traceability |
 
@@ -36,23 +36,36 @@ Completed sprint numbers through Sprint 3.40 are historical and are not renumber
 
 ## Planned sprint sequence
 
+`Planned` tasks form the Version 1.0 scope. `Later` tasks are accepted post-Version-1.0 work and must not delay the initial stable release. Cross-cutting security, CI, release, governance, and documentation gates apply throughout the implementation sprints and are complete only when their canonical tasks are `Done`.
+
 | Sprint | Backlog IDs | Scope |
 |---|---|---|
 | Sprint 3.41 | BL-026–BL-035 | FlashGate architecture baseline and backlog consolidation |
-| Sprint 3.42 | BL-227–BL-243 | Technical project rename to FlashGate MCP |
-| Sprint 3.43 | BL-244–BL-257 | Pre-1.0 filesystem tool contract cleanup |
-| Sprint 3.44 | BL-174, BL-258–BL-266 | Codex read-only activation preparation |
-| Sprint 3.45 | BL-189–BL-212 | Efficiency benchmarks and MCP tool contract foundation |
-| Sprint 3.46 | BL-084–BL-099 | Operations and Job Manager foundation |
-| Sprint 3.47 | BL-036–BL-049 | Efficient filesystem listing, reading and batch inspection |
-| Sprint 3.48 | BL-050–BL-061, BL-063–BL-067 | Targeted edits, conditional writes and bounded filesystem plans |
+| Sprint 3.42 | BL-262–BL-278 | Technical project rename to FlashGate MCP |
+| Sprint 3.43 | BL-279–BL-292 | Pre-1.0 filesystem tool contract cleanup |
+| Sprint 3.44 | BL-174, BL-293–BL-301 | Codex read-only activation preparation |
+| Sprint 3.45 | BL-189–BL-216, BL-218–BL-220 | Efficiency, MCP contracts, payload/result architecture, catalog budgets, and native-adapter policy |
+| Sprint 3.46 | BL-084–BL-099, BL-164 | Operations/Job Manager, identity-bound handles, quotas, fairness, and cleanup |
+| Sprint 3.47 | BL-036–BL-049 | Efficient filesystem listing, reading, batch inspection, MIME/binary handling, and large-result handoff |
+| Sprint 3.48 | BL-050–BL-061, BL-063–BL-067 | Targeted edits, conditional writes, bounded filesystem plans, and filesystem integration benchmarks |
 | Sprint 3.49 | BL-068–BL-080, BL-082 | Filesystem and text search |
-| Sprint 3.50 | BL-100–BL-111 | Named roots, capabilities and tool profiles |
-| Sprint 3.51 | BL-113, BL-129, BL-132, BL-162, BL-165 | Process architecture and security model |
+| Sprint 3.50 | BL-100–BL-111, BL-159–BL-161, BL-171 | Named roots, read-only safe default, capabilities, dynamic tool profiles, and negative authorization tests |
+| Sprint 3.51 | BL-113, BL-129, BL-132, BL-162, BL-165, BL-168, BL-170 | Process architecture, execution identity, residual-risk, and security model |
 | Sprint 3.52 | BL-114–BL-118 | Process observation |
-| Sprint 3.53 | BL-119–BL-126, BL-130–BL-131, BL-133–BL-135 | Managed process execution |
-| Sprint 3.54 | BL-136–BL-149, BL-151–BL-152 | Allowlisted command execution and OS isolation |
-| Sprint 3.55 | BL-153–BL-157 | System information |
+| Sprint 3.53 | BL-119–BL-126, BL-130–BL-135, BL-250–BL-252 | Managed process execution, output cursors, resource control, race tests, and CI jobs |
+| Sprint 3.54 | BL-136–BL-149, BL-151–BL-152, BL-163, BL-167–BL-168, BL-170 | Typed allowlisted command execution, OS isolation, redaction, and security tests |
+| Sprint 3.55 | BL-062, BL-153–BL-157 | Scoped and redacted system information |
+| Sprint 3.56 | BL-221–BL-225, BL-233–BL-239, BL-166 | Multi-mode architecture, IPC/configuration contracts, hybrid execution-identity backend design, audit lifecycle, and Variant A security |
+| Sprint 3.57 | BL-226–BL-231 | Named Pipe/Unix socket transports, proxy/auto modes, Windows SCM service, Linux systemd service, and Variant A service-account execution |
+| Sprint 3.58 | BL-172–BL-173, BL-177–BL-179, BL-241–BL-261, BL-303–BL-310, BL-312–BL-313 | Version 1.0 validation, packaging, cross-project benchmarks, supply-chain evidence, governance, documentation, and release gate |
+
+Version 1.0 is reached only after Sprint 3.58 and the release gate in `BL-261`. The following accepted work is intentionally post-Version 1.0 and has no committed implementation sprint before that release:
+
+| Post-1.0 workstream | Backlog IDs | Direction |
+|---|---|---|
+| Efficiency and user-isolated hosting | BL-217, BL-232, BL-240 | Conditional reads, user-scoped persistent hosts, and Variant B user-worker implementation |
+| Optional accelerators and expanded control | BL-081, BL-083, BL-112, BL-127–BL-128, BL-150, BL-158 | Ripgrep/index, legacy Roots, external PID/input, interactive shell, and network information decision gates |
+| Provider/community ecosystem | BL-169, BL-176, BL-180–BL-188, BL-311 | External provider security, licensing, governance extensions, provider contracts/runtime, and related documentation |
 
 Sprint 3.44 replaces the former Sprint 3.41 Codex preparation plan and must use the FlashGate technical names created in Sprint 3.42 and the cleaned tool names created in Sprint 3.43.
 
@@ -116,10 +129,10 @@ Sprint 3.44 replaces the former Sprint 3.41 Codex preparation plan and must use 
 | BL-042 | Planned | Add byte-range and head/tail reads | Bounded binary-safe offsets and edge semantics |
 | BL-043 | Planned | Expand portable path metadata | Modified time, permissions where portable, type, and size |
 | BL-044 | Planned | Add large-file streaming strategy | Avoid whole-file memory loading and unbounded responses |
-| BL-045 | Planned | Define binary-file read behavior | Detection, encoding, explicit modes, and limits |
+| BL-045 | Planned | Define text, media, and binary read behavior | MIME detection, explicit modes, inline thresholds, bounded encoding, resource-handoff rules, and client-compatible fallbacks |
 | BL-046 | Planned | Add batch `read_files` | Per-item bounded results and partial-failure model |
 | BL-047 | Planned | Add batch `get_paths_info` | Reduce repeated stat/existence round trips |
-| BL-048 | Planned | Add batch hashing | Bounded algorithms, byte accounting, and job handoff |
+| BL-048 | Planned | Add batch hashing and content fingerprints | Bounded algorithms, byte accounting, reusable change identifiers, and job handoff |
 | BL-049 | Planned | Add bounded directory tree | Depth, entry, byte, field, and pagination controls |
 | BL-050 | Planned | Add exact targeted file changes | Explicit ranges or match-based edits without model retransmission |
 | BL-051 | Planned | Add expected-match-count checks | Reject ambiguous or stale targeted edits |
@@ -166,15 +179,15 @@ Sprint 3.44 replaces the former Sprint 3.41 Codex preparation plan and must use 
 | ID | Status | Task | Scope and acceptance notes |
 |---|---|---|---|
 | BL-084 | Planned | Implement Operation Registry | Thread-safe ownership and lifecycle |
-| BL-085 | Planned | Generate opaque operation handles | `op_<opaque-id>` without guessable internals |
+| BL-085 | Planned | Generate opaque identity-bound operation handles | `op_<opaque-id>` without guessable internals; bind owner principal, root, profile, execution backend, and service generation |
 | BL-086 | Planned | Implement operation status model | queued/running/completed/failed/cancelled/timed_out |
 | BL-087 | Planned | Add context cancellation | Cooperative cancellation contract |
 | BL-088 | Planned | Add server deadlines and watchdog | Server-controlled timeout enforcement |
 | BL-089 | Planned | Define progress and byte counters | Read/written/scanned bytes and bounded domain progress |
-| BL-090 | Planned | Add bounded result storage and TTL | Expiry and retrieval behavior |
+| BL-090 | Planned | Add bounded identity-bound result storage and TTL | Expiry, retrieval, resource handles, owner checks, and cleanup behavior |
 | BL-091 | Planned | Add temporary-resource cleanup | Success, failure, cancellation, timeout, and incomplete markers |
-| BL-092 | Planned | Limit global and per-domain parallel jobs | Configurable safe defaults |
-| BL-093 | Planned | Limit operation queue length | Deterministic overload response |
+| BL-092 | Planned | Limit global, per-domain, and per-principal parallel jobs | Configurable safe defaults that prevent one caller from exhausting shared service capacity |
+| BL-093 | Planned | Limit queues and provide fair scheduling | Global/per-principal queue caps, deterministic overload responses, and starvation resistance |
 | BL-094 | Planned | Define controlled server shutdown | Cancellation, grace period, worker termination, final state |
 | BL-095 | Planned | Prevent and detect job leaks | TTL sweep, ownership checks, and metrics |
 | BL-096 | Planned | Preserve domain ownership | Jobs execute work without becoming its business domain |
@@ -189,7 +202,7 @@ Sprint 3.44 replaces the former Sprint 3.41 Codex preparation plan and must use 
 | BL-100 | Planned | Implement functional capability model | Functional rights kept separate from profiles and risk classifications |
 | BL-101 | Planned | Support multiple named roots | Preserve compatible single-root migration path |
 | BL-102 | Planned | Use root ID and relative path in target contracts | Avoid model-visible absolute host paths |
-| BL-103 | Planned | Implement profile and risk-policy configuration | Final profile names, composition, risk classifications, validation, and safe defaults |
+| BL-103 | Planned | Implement profile and risk-policy configuration with read-only default | If roots exist but no profile is selected, expose only the safe read profile; write/process/command profiles require explicit activation |
 | BL-104 | Planned | Add per-root read/write policy | Independent permissions per root |
 | BL-105 | Planned | Add per-root size and result limits | File, scan, response, and temporary data policies |
 | BL-106 | Planned | Add per-root allowed file types | Explicit portable matching |
@@ -233,14 +246,14 @@ Sprint 3.44 replaces the former Sprint 3.41 Codex preparation plan and must use 
 | ID | Status | Task | Scope and acceptance notes |
 |---|---|---|---|
 | BL-136 | Planned | Create command-execution threat model | Executable substitution, injection, environment, roots, output, isolation |
-| BL-137 | Planned | Add executable allowlist with IDs | Resolve IDs server-side to approved absolute paths |
-| BL-138 | Planned | Enforce no-shell default and argument arrays | No free shell string in standard profile |
+| BL-137 | Planned | Add typed command definitions with executable IDs | Resolve IDs server-side to approved absolute paths plus fixed subcommands, allowed flags/value rules, path-argument binding, timeout/output/network policy, and optional binary identity pinning |
+| BL-138 | Planned | Enforce no-shell default and typed argument objects | No free shell string; server generates argv only from validated structured fields and rejects response-file, hook, plugin, and configuration injection paths |
 | BL-139 | Planned | Restrict working directories to allowed roots | Named-root process permission integration |
 | BL-140 | Planned | Define timeout defaults and maxima | Server-enforced deadlines |
 | BL-141 | Planned | Limit stdout and stderr separately | Bounded buffers/results and truncation markers |
 | BL-142 | Planned | Define stable command result schema | Exit, output references, timeout, status, and bounded diagnostics |
 | BL-143 | Planned | Implement `run_command` over Managed Process Engine | Synchronous wrapper only |
-| BL-144 | Planned | Add environment allowlist and propagation rules | Minimal explicit environment |
+| BL-144 | Planned | Add environment allowlist and propagation rules | Minimal explicit environment; no unreviewed inherited hooks, loaders, plugin paths, credentials, or interpreter controls |
 | BL-145 | Planned | Add execution environment and output redaction | Results, diagnostics, and audit events |
 | BL-146 | Planned | Implement Windows execution isolation | Least privilege and documented platform limits |
 | BL-147 | Planned | Implement Linux execution isolation | Least privilege and documented platform limits |
@@ -272,13 +285,13 @@ Sprint 3.44 replaces the former Sprint 3.41 Codex preparation plan and must use 
 | BL-163 | Planned | Define and enforce execution policies | Executables, args, roots, environment, limits, isolation |
 | BL-164 | Planned | Add Operations/Job limit security tests | Queue, concurrency, time, temporary data, cleanup, handles |
 | BL-165 | Planned | Maintain stateful domain threat models | Filesystem, search, processes, execution, FlashGate modules/providers, and MCP protocol extensions |
-| BL-166 | Planned | Define structured audit event model | Bounded redacted decisions, operations, outcomes, and identifiers |
+| BL-166 | Planned | Define structured audit lifecycle and trace correlation | Bounded redacted decisions/outcomes, immutable event IDs, end-to-end correlation, rotation, retention, disk-full/backpressure behavior, and log-injection protection |
 | BL-167 | Planned | Extend secret redaction across new domains | Process, execution, system, jobs, audit, and module/provider outputs |
 | BL-168 | Planned | Validate least-privilege execution | Server and child process permissions |
-| BL-169 | Planned | Enforce FlashGate module/provider security boundaries | No bypass of policies, functional capabilities, roots, limits, audit, or adapters |
+| BL-169 | Later | Enforce FlashGate module/provider security boundaries | Post-1.0 provider work may not bypass policies, functional capabilities, roots, limits, audit, execution identity, or adapters |
 | BL-170 | Planned | Document sandbox boundaries and residual risk | OS, process, filesystem, link/reparse, and configuration limits |
 | BL-171 | Planned | Verify MCP annotations are never authorization | Documentation and negative tests |
-| BL-172 | Later | Review workflow pinning strategy | Supply-chain hardening and SHA-pin trade-offs |
+| BL-172 | Planned | Review and enforce workflow pinning strategy | Version 1.0 supply-chain hardening, SHA-pin tradeoffs, update process, and automated validation |
 | BL-173 | Planned | Maintain public security policy | Reporting, supported versions, disclosure, and release gate |
 | BL-174 | Done | Fail closed when no root is explicitly configured | Root is required; missing/empty/whitespace fail closed; production roots are absolute; `.` requires explicit `MCP_ALLOW_CWD_ROOT=true`; other relative roots are denied; root must exist and resolve to a permitted directory; safe categorized stderr and exit codes precede Registry/STDIO; Windows/Linux startup smokes cover the contract |
 
@@ -287,35 +300,35 @@ Sprint 3.44 replaces the former Sprint 3.41 Codex preparation plan and must use 
 | ID | Status | Task | Scope and acceptance notes |
 |---|---|---|---|
 | BL-175 | Done | Confirm current open-source license | Repository and README currently declare GNU GPL v3.0; no license change in Sprint 3.41 |
-| BL-176 | Planned | Review license and distribution compatibility before external module contract | Separate factual compatibility review before first external FlashGate module/provider contract; no legal conclusions in backlog |
+| BL-176 | Later | Review license and distribution compatibility before external module contract | Post-1.0 factual compatibility gate before the first external provider; no legal conclusions in backlog |
 | BL-177 | Planned | Define governance model | Decision authority, releases, and stewardship |
 | BL-178 | Planned | Define maintainer rules | Roles, review, security, and succession |
 | BL-179 | Planned | Expand contribution guidelines | Development, testing, documentation, and DCO/CLA decision |
 | BL-180 | Later | Add Code of Conduct before public community release | Community expectations and enforcement |
-| BL-181 | Planned | Hold FlashGate module/provider contract decision gate | Required before first external provider |
-| BL-182 | Planned | Decide FlashGate module/provider identifier rules | No concrete syntax before the contract decision |
-| BL-183 | Planned | Define FlashGate module/provider metadata | Name, version, vendor, tools, config, platforms, dependencies |
-| BL-184 | Planned | Define module/provider capability declarations | Required and optional functional capabilities with least privilege |
-| BL-185 | Planned | Define module/provider security classification | Risk categories and review requirements |
-| BL-186 | Planned | Distinguish public, community, vendor, and internal providers | Distribution and support labels do not change security |
-| BL-187 | Planned | Define official versus community provider policy | Trust language, signing/update expectations, and support |
+| BL-181 | Later | Hold FlashGate module/provider contract decision gate | Post-1.0 and required before first external provider |
+| BL-182 | Later | Decide FlashGate module/provider identifier rules | Post-1.0; no concrete syntax before the contract decision |
+| BL-183 | Later | Define FlashGate module/provider metadata | Post-1.0 name, version, vendor, tools, config, platforms, dependencies |
+| BL-184 | Later | Define module/provider capability declarations | Post-1.0 required and optional functional capabilities with least privilege |
+| BL-185 | Later | Define module/provider security classification | Post-1.0 risk categories and review requirements |
+| BL-186 | Later | Distinguish public, community, vendor, and internal providers | Post-1.0 distribution and support labels do not change security |
+| BL-187 | Later | Define official versus community provider policy | Post-1.0 trust language, signing/update expectations, and support |
 | BL-188 | Later | Decide FlashGate provider runtime model | Choose among statically linked packages registered at build time, registered in-process providers, or isolated out-of-process providers over local IPC; a Go module is source/versioning only, not a runtime model |
 
 ### Efficiency and MCP contract foundation
 
 | ID | Status | Task | Scope and acceptance notes |
 |---|---|---|---|
-| BL-189 | Planned | Add startup benchmark | Repeatable cold/warm measurement |
-| BL-190 | Planned | Measure idle RSS | Windows/Linux baseline |
-| BL-191 | Planned | Measure peak memory, CPU time, and allocations | Representative operations and concurrency |
-| BL-192 | Planned | Measure p50 and p95 latency | Reference calls and workflows |
-| BL-193 | Planned | Record scanned, read, and written bytes | Server-side primary counters |
-| BL-194 | Planned | Measure serialized result sizes | Sprint 3.45a records initial historical/text/text-plus-structured payload bytes for six result fixtures; broader characters/entries/results coverage remains planned |
-| BL-195 | Planned | Measure `tools/list` size | Sprint 3.45b records one deterministic JSON-RPC UTF-8 byte snapshot with and without runtime schemas for the read-only and default profiles; broader token/budget tracking remains planned |
-| BL-196 | Planned | Measure calls per reference workflow | Local-operation versus model-round-trip comparisons |
-| BL-197 | Planned | Add optional schema/response token approximation | Supplemental, not primary, metric |
-| BL-198 | Planned | Establish benchmark baselines | Sprint 3.45a adds a versioned tool-result-contract baseline; broader sprint startup/resource/latency baselines remain planned |
-| BL-199 | Planned | Define CI regression budgets | Noise-aware thresholds and review path |
+| BL-189 | Done | Add startup benchmark | Real binary over STDIO; one `first_process_start` after build plus 30 new subsequent processes by default, 10 in quick mode; no OS cold-cache claim |
+| BL-190 | Done | Measure idle RSS | Win32 working set and Linux `/proc/<pid>/status` `VmRSS`; other platforms explicitly `not_supported` |
+| BL-191 | Done | Measure peak memory, CPU time, and allocations | Win32 peak working set/user/kernel time, Linux `VmHWM`/user/system time, existing and direct-handler Go allocation benchmarks, representative single and multi-operation workflows |
+| BL-192 | Done | Measure p50 and p95 latency | Nearest-rank p50/p95 for startup and all ten real-process reference workflows |
+| BL-193 | Done | Record scanned, read, and written bytes | Runner-side counters have explicit semantics and remain outside public MCP results |
+| BL-194 | Done | Measure serialized result sizes | Existing six-fixture historical/text/text-plus-structured benchmark retained; deterministic result and complete response bytes are pinned |
+| BL-195 | Done | Measure `tools/list` size | Read-only/default tool count, schema count, request/result/response bytes, and approximate tokens are deterministic gates |
+| BL-196 | Done | Measure calls per reference workflow | Machine-readable workflows record actual `tools/call` counts, including ten-call independent path/read cases |
+| BL-197 | Done | Add optional schema/response token approximation | `approx_tokens_bytes4 = ceil(UTF-8 bytes / 4)` is clearly non-model-specific and unsuitable for billing |
+| BL-198 | Done | Establish benchmark baselines | Versioned v1 schema, Windows quick baseline, platform-specific generation scripts, host-path exclusion, and Linux-ready collection |
+| BL-199 | Done | Define CI regression budgets | Machine-readable hard deterministic and soft noise-sensitive budgets with local evaluation; full CI execution/comparison remains BL-247/BL-248 |
 | BL-200 | Done | Add MCP `outputSchema` | All eight runtime filesystem tools expose success-only schemas matching catalog `resultSchema` and successful `structuredContent`; no error migration or complete general JSON Schema validation |
 | BL-201 | Done | Add MCP `CallToolResult` foundation and `structuredContent` | All eight successful filesystem tools use one central text-plus-structured wrapper with deterministic parity, strict decoder/wire tests, corrected smokes, and no runtime `outputSchema` |
 | BL-202 | Planned | Review MCP tool annotations | Accurate metadata, never authorization |
@@ -323,111 +336,158 @@ Sprint 3.44 replaces the former Sprint 3.41 Codex preparation plan and must use 
 | BL-204 | Planned | Evaluate official MCP conformance testing and add schema snapshots | Sprint 3.45b adds full runtime/catalog output-schema parity and `tools/list` wire coverage; official tooling plus full input/output snapshots remain planned |
 | BL-205 | Planned | Add response-size regression tests | Sprint 3.45b measures `tools/list` payload impact without setting a persistent budget; success/error regression gates remain planned |
 | BL-206 | Planned | Document local deterministic work principle | Prefer local copy/edit/hash/search over model retransmission |
-| BL-207 | Planned | Define supported MCP protocol-version strategy | Keep core version-independent; negotiation and compatibility tests for each advertised revision; current implementation remains `2025-11-25` |
-| BL-208 | Planned | Define MCP extension-negotiation strategy | Official vendor-prefix/slash identifiers, capability negotiation, downgrade/mismatch tests, no authorization implication |
-| BL-209 | Planned | Decide MCP Tasks compatibility | Evaluate `io.modelcontextprotocol/tasks` and supported client behavior before asynchronous MCP exposure |
+| BL-207 | Planned | Define Version 1.0 MCP protocol matrix | Keep core version-independent; retain `2025-11-25` until newer revisions are final and implemented; test every advertised revision and breaking upgrade path |
+| BL-208 | Planned | Define MCP extension-negotiation and stateless-adapter strategy | Official identifiers, capability negotiation, 2026 stateless-core adaptation, cache/TTL semantics, downgrade/mismatch tests, and no authorization implication |
+| BL-209 | Planned | Decide final MCP Tasks Extension compatibility | Do not mix the 2025 experimental lifecycle with the final extension; evaluate supported clients before asynchronous MCP exposure |
 | BL-210 | Planned | Map internal operation lifecycle to MCP Tasks | Define tested state, result, error, cancellation, TTL, and redaction mapping; internal states may be more detailed |
 | BL-211 | Planned | Decide fallback when MCP Tasks is unavailable | Bounded synchronous result or explicit capability error; no ad hoc custom job-tool contract |
-| BL-212 | Planned | Validate all input/output schemas as JSON Schema 2020-12 | Sprint 3.45b tests only the emitted project subset structurally; complete standard-conformant validation, dialect declarations, snapshots, and protocol-version compatibility remain planned |
+| BL-212 | Planned | Validate all input/output schemas as JSON Schema 2020-12 | Complete standard-conformant validation, dialect declarations, deterministic property ordering, snapshots, and protocol-version compatibility |
+| BL-213 | Planned | Define payload-class result contracts and single-transmission rules | Small metadata may retain text/structured parity; heavy text, binary, search, and process payloads appear once with separate compact metadata and bounded compatibility fallback |
+| BL-214 | Planned | Add wire-amplification and useful-byte efficiency metrics | Record response bytes versus useful payload, approximate token cost per useful byte, serialization copies, and hard regression budgets |
+| BL-215 | Planned | Define profile-specific tool-catalog and initialization budgets | Set Version 1.0 limits for tool count, schema bytes/tokens, descriptions, server instructions, and optional profile composition |
+| BL-216 | Planned | Add compact profile-specific server instructions | Guide clients to batch, paginate, request fields/ranges, use dry-run, avoid redundant stat calls, and resume cursor output within a bounded instruction budget |
+| BL-217 | Later | Add conditional read and not-modified contracts | Post-1.0 content fingerprints/snapshot IDs for files, lists, searches, system facts, and process output to avoid retransmitting unchanged data |
+| BL-218 | Planned | Add opaque large-result and resource-handoff abstraction | Principal-bound `flashgate://` handles, MIME/size/hash metadata, TTL, streaming or paging, negotiated resource links, and bounded inline fallback without host-path leakage |
+| BL-219 | Planned | Define deterministic catalog fingerprints and cache semantics | Stable tool ordering, profile/config/protocol fingerprint, invalidation rules, and compatible list-result TTL behavior |
+| BL-220 | Planned | Define native OS-adapter selection and no-interpreter gate | Prefer Go standard library, platform Go adapters, and direct OS APIs; external OS programs require no-shell allowlisting plus benchmark/security evidence; interpreter-based adapters are excluded from Version 1.0 |
+
+### Native multi-mode runtime and local service deployment epic
+
+| ID | Status | Task | Scope and acceptance notes |
+|---|---|---|---|
+| BL-221 | Planned | Define native multi-mode runtime architecture and threat model | One Windows PE/Linux ELF binary; explicit current/planned boundaries; no interpreter, remote listener, or implicit privilege escalation |
+| BL-222 | Planned | Preserve one self-contained binary across runtime modes | Shared core and executable for `stdio`, `proxy`, `auto`, system service, and user-scoped host; split only through a separate evidence-backed ADR |
+| BL-223 | Planned | Define CLI mode and lifecycle contract | Preserve no-argument STDIO compatibility; specify `--mode stdio`, `--mode proxy`, `--mode auto`, `--mode service`, management commands, exit codes, and shutdown behavior |
+| BL-224 | Planned | Separate MCP/core runtime from transport and host lifecycle | Transport-neutral server/core wiring with no business logic in STDIO, IPC, SCM, or systemd adapters |
+| BL-225 | Planned | Define versioned local IPC protocol and compatibility handshake | Framing, protocol version, feature negotiation, correlation, cancellation, errors, limits, disconnects, and proxy/service version mismatch behavior |
+| BL-226 | Planned | Implement Windows Named Pipe transport | Local-only pipe, restrictive ACLs, caller identity from the OS, bounded framing, cancellation, and no trust in proxy-supplied identity |
+| BL-227 | Planned | Implement Linux Unix Domain Socket transport | Local-only socket, restrictive ownership/mode, peer UID/GID/PID credentials, bounded framing, cleanup, and stale-socket handling |
+| BL-228 | Planned | Implement STDIO proxy mode | Present normal MCP STDIO to the client and forward safely to the local service without corrupting stdout or changing public tool contracts |
+| BL-229 | Planned | Implement automatic service discovery and safe STDIO fallback | Prefer explicitly configured/system/user endpoints; no elevation or installation; fallback only when no managed endpoint is present, never after authorization, policy, or compatibility rejection |
+| BL-230 | Planned | Implement Windows SCM service host and management | Real Windows Service Control Manager lifecycle, restricted service identity, install/uninstall/start/stop/status, graceful shutdown, and recovery policy |
+| BL-231 | Planned | Implement Linux systemd system service | Unit, dedicated restricted account, Unix socket/runtime directories, journald, hardening directives, install/uninstall/start/stop/status, and graceful shutdown |
+| BL-232 | Later | Add user-scoped background modes | Post-1.0 Linux `systemd --user` service and Windows per-user host; direct STDIO remains the non-admin Version 1.0 path |
+| BL-233 | Planned | Define configuration precedence, endpoint discovery, and log destinations | CLI/environment/config precedence, system/user paths, endpoint names, timeouts, fallback policy, stdout purity, journald/Event Log/user logs, and secret-safe diagnostics |
+| BL-234 | Planned | Enforce service-side authorization, identity dispatch, and policy | OS-derived caller identity, user/group mapping, roots, profiles, capabilities, Variant A backend selection, per-principal limits, audit, least privilege, and no local privilege-escalation path |
+| BL-235 | Planned | Adopt hybrid per-root service execution identity | Version 1.0 uses service-account roots; user-worker roots are architected now and implemented later; in-process impersonation is permanently excluded |
+| BL-236 | Planned | Implement backend-neutral execution-identity interfaces | Separate authenticated caller, policy decision, effective identity backend, operation dispatch, and OS adapter so Variant B can be added without changing domain/MCP contracts |
+| BL-237 | Planned | Implement Variant A service-account root backend | Dedicated least-privilege account, explicitly ACL-granted roots, no LocalSystem/root convenience default, deterministic denial, and dual caller/effective-identity audit fields |
+| BL-238 | Planned | Define Variant B user-worker contract and threat model | Specify worker launch/token or UID model, same-binary internal worker mode, broker IPC, environment/groups, lifecycle, quotas, crash recovery, and Windows/Linux differences without implementing it in Version 1.0 |
+| BL-239 | Planned | Bind state, caches, and result resources to execution context | Bind principal, groups, profile, root, backend, service instance/generation, protocol context, and expiry; prohibit cross-principal cache/handle reuse |
+| BL-240 | Later | Implement Variant B per-user worker backend | Post-1.0 broker-managed worker processes under the real user identity with OS resource isolation, native audit attribution, and no shared-process impersonation |
+| BL-241 | Planned | Add multi-client, lifecycle, compatibility, and denial tests | Windows/Linux unit and integration coverage for concurrent clients, disconnects, restart, stale endpoints, shutdown, version mismatch, unauthorized access, and fail-closed auto behavior |
+| BL-242 | Planned | Add Windows/Linux CI and release validation for all modes | Build native artifacts, test STDIO/proxy/service adapters where CI permits, verify no interpreter dependency, validate service assets, and retain existing gates |
+| BL-243 | Planned | Document installation, removal, operation, and non-admin deployment | System service, user service/host, portable STDIO, proxy/auto configuration, troubleshooting, rollback, permissions, and explicit current-versus-planned status |
+| BL-244 | Planned | Benchmark direct, proxy, and service modes and define release gate | Startup, steady-state latency, memory, CPU, payload overhead, concurrency, and evidence-based acceptance thresholds before recommending managed mode broadly |
 
 ### CI, release, and quality epic
 
 | ID | Status | Task | Scope and acceptance notes |
 |---|---|---|---|
-| BL-213 | Planned | Add release notes or tag-based release workflow | Release maturity after technical rename |
-| BL-214 | Planned | Add artifact verification | Run version/help and validate name/platform/metadata |
-| BL-215 | Planned | Run benchmark suite in CI | Stable selection and artifacted results |
-| BL-216 | Planned | Compare benchmark baselines in CI | Budgets from `BL-199` |
-| BL-217 | Planned | Validate PowerShell and Bash scripts | Syntax/lint and smoke portability |
-| BL-218 | Planned | Run race detector for stateful components | Jobs, process registry, output buffers, shutdown |
-| BL-219 | Planned | Add Windows/Linux process test jobs | Observation and managed lifecycle |
-| BL-220 | Planned | Add Operations/Job test jobs | Cancellation, timeout, cleanup, and race coverage |
-| BL-221 | Planned | Verify FlashGate release artifact names | After Sprint 3.42, including archives and summaries |
-| BL-222 | Planned | Enforce `tools/list` budget | Profile-specific size regression |
-| BL-223 | Planned | Run schema snapshot checks in CI | Contract changes require explicit review |
-| BL-224 | Planned | Run response-size tests in CI | Prevent unbounded contract regressions |
-| BL-225 | Planned | Search repository for legacy names after Sprint 3.42 | Allow only migration/history exceptions |
-| BL-226 | Planned | Keep standard test/vet/lint/build gates | Preserve existing validation on Windows and Linux |
+| BL-245 | Planned | Add release notes or tag-based release workflow | Release maturity after technical rename |
+| BL-246 | Planned | Add artifact verification | Run version/help and validate name/platform/metadata |
+| BL-247 | Planned | Run benchmark suite in CI | Stable selection and artifacted results |
+| BL-248 | Planned | Compare benchmark baselines in CI | Budgets from `BL-199` |
+| BL-249 | Planned | Validate PowerShell and Bash scripts | Syntax/lint and smoke portability |
+| BL-250 | Planned | Run race detector for stateful components | Jobs, process registry, output buffers, shutdown |
+| BL-251 | Planned | Add Windows/Linux process test jobs | Observation and managed lifecycle |
+| BL-252 | Planned | Add Operations/Job test jobs | Cancellation, timeout, cleanup, and race coverage |
+| BL-253 | Planned | Verify FlashGate release artifact names | After Sprint 3.42, including archives and summaries |
+| BL-254 | Planned | Enforce profile-specific catalog and initialization budgets | `tools/list`, tool count, schema bytes/tokens, server instructions, deterministic ordering, and fingerprint regression |
+| BL-255 | Planned | Run schema snapshot checks in CI | Contract changes require explicit review |
+| BL-256 | Planned | Run payload and response-efficiency tests in CI | Prevent unbounded contracts, duplicate heavy payloads, excessive wire amplification, and result-resource regressions |
+| BL-257 | Planned | Search repository for legacy names after Sprint 3.42 | Allow only migration/history exceptions |
+| BL-258 | Planned | Keep standard test/vet/lint/build gates | Preserve existing validation on Windows and Linux |
+| BL-259 | Planned | Add reproducible cross-project efficiency benchmark | Compare pinned FlashGate, official Node.js filesystem, selected native Rust filesystem, and selected Go filesystem servers on identical host/corpus/workflows without claiming unmeasured superiority |
+| BL-260 | Planned | Add native release supply-chain evidence | Checksums, Windows signing plan, Linux artifact/package signing plan, SBOM, build provenance, dependency inventory, reproducible-build comparison, and atomic rollback; no silent auto-update |
+| BL-261 | Planned | Define and enforce Version 1.0 release boundary | Verify every Planned task or documented waiver, stable protocol/tool contracts, migration/deprecation policy, Variant A-only service identity, performance/security budgets, supported platforms, and post-1.0 deferrals |
 
 ### Sprint 3.42 technical rename
 
 | ID | Status | Task | Scope and acceptance notes |
 |---|---|---|---|
-| BL-227 | Done | Rename local folder to `flashgate-mcp` | Manually completed before Sprint 3.42 implementation |
-| BL-228 | Done | Rename GitHub repository to `flashgate-mcp` | Manually completed before Sprint 3.42 implementation |
-| BL-229 | Done | Update Git remote URL | Remote verified with fetch and redirect checks |
-| BL-230 | Done | Update Go module and imports | `github.com/blacksheepkhan/flashgate-mcp` |
-| BL-231 | Done | Rename binary to `flashgate-mcp` | Windows/Linux build and usage updated |
-| BL-232 | Done | Change MCP server implementation name (`serverInfo.name`) to `flashgate` | Initialize response and smoke tests updated |
-| BL-233 | Done | Review package and command paths | `cmd/server` retained as a generic internal command path |
-| BL-234 | Done | Update README, changelog, and documentation names | Migration/history context preserved |
-| BL-235 | Done | Update PowerShell and Bash scripts | Paths, errors, examples, and smoke expectations updated |
-| BL-236 | Done | Update CI and release artifact names | Workflows updated without unrelated modernization |
-| BL-237 | Done | Update installation and configuration examples | New folder and binary names documented |
-| BL-238 | Done | Update smoke tests | Implementation name (`serverInfo.name`), binary, paths, and current tool names validated |
-| BL-239 | Done | Search all files for legacy names | Remaining occurrences classified as historical or migration guidance |
-| BL-240 | Done | Write technical rename migration note | Old/new repository, module, binary, implementation name (`serverInfo.name`), local folder |
-| BL-241 | Done | Verify GitHub redirect behavior | New path, remote, fetch, and legacy URL redirect verified |
-| BL-242 | Done | Document manual repository rename action | See dated migration note: clean-main/origin/auth/target/remote preconditions; GitHub rename, remote/default/folder actions and separate technical branch; view/remote/fetch/main/reachability/redirect/history/path verification; failure/rollback without force-pushes or old-name reuse |
-| BL-243 | Done | Keep rename sprint functionally neutral | No feature or tool-contract changes mixed in |
+| BL-262 | Done | Rename local folder to `flashgate-mcp` | Manually completed before Sprint 3.42 implementation |
+| BL-263 | Done | Rename GitHub repository to `flashgate-mcp` | Manually completed before Sprint 3.42 implementation |
+| BL-264 | Done | Update Git remote URL | Remote verified with fetch and redirect checks |
+| BL-265 | Done | Update Go module and imports | `github.com/blacksheepkhan/flashgate-mcp` |
+| BL-266 | Done | Rename binary to `flashgate-mcp` | Windows/Linux build and usage updated |
+| BL-267 | Done | Change MCP server implementation name (`serverInfo.name`) to `flashgate` | Initialize response and smoke tests updated |
+| BL-268 | Done | Review package and command paths | `cmd/server` retained as a generic internal command path |
+| BL-269 | Done | Update README, changelog, and documentation names | Migration/history context preserved |
+| BL-270 | Done | Update PowerShell and Bash scripts | Paths, errors, examples, and smoke expectations updated |
+| BL-271 | Done | Update CI and release artifact names | Workflows updated without unrelated modernization |
+| BL-272 | Done | Update installation and configuration examples | New folder and binary names documented |
+| BL-273 | Done | Update smoke tests | Implementation name (`serverInfo.name`), binary, paths, and current tool names validated |
+| BL-274 | Done | Search all files for legacy names | Remaining occurrences classified as historical or migration guidance |
+| BL-275 | Done | Write technical rename migration note | Old/new repository, module, binary, implementation name (`serverInfo.name`), local folder |
+| BL-276 | Done | Verify GitHub redirect behavior | New path, remote, fetch, and legacy URL redirect verified |
+| BL-277 | Done | Document manual repository rename action | See dated migration note: clean-main/origin/auth/target/remote preconditions; GitHub rename, remote/default/folder actions and separate technical branch; view/remote/fetch/main/reachability/redirect/history/path verification; failure/rollback without force-pushes or old-name reuse |
+| BL-278 | Done | Keep rename sprint functionally neutral | No feature or tool-contract changes mixed in |
 
 ### Sprint 3.43 pre-1.0 tool contract cleanup
 
 | ID | Status | Task | Scope and acceptance notes |
 |---|---|---|---|
-| BL-244 | Done | Rename `list_files` to `list_directory` | Code, closed schema, runtime validation, tests, docs, catalog, examples, and smoke updated |
-| BL-245 | Done | Rename `stat_path` to `get_path_info` | Single-stat existing/missing contract implemented without exposing host paths |
-| BL-246 | Done | Rename `mkdir` to `create_directory` | Parent creation retained; `created` now reflects the actual leaf state |
-| BL-247 | Done | Remove `exists_path` | MCP tool and redundant core method removed; no compatibility alias |
-| BL-248 | Done | Remove `rename_path` | MCP tool and redundant core alias removed; `move_path` covers rename and movement |
-| BL-249 | Done | Define `move_path` rename/move semantics | Same-path/SameFile, overwrite type combinations, same-volume/cross-volume, Windows case aliases, hardlinks, and self-subtree covered; no copy/delete fallback |
-| BL-250 | Done | Define missing-path `get_path_info` result | Genuine missing returns `{ "path": ..., "exists": false }`; all policy denials remain errors |
-| BL-251 | Done | Define normalized filesystem error codes | Safe sprint-local categories map expected failures to `-32602` and unexpected I/O to `-32603`; stable wire objects remain later work |
-| BL-252 | Done | Review input/output schemas and required fields | Strict object/EOF/unknown-field validation, non-blank paths, optional list path, and `maxBytes >= 1` implemented |
-| BL-253 | Done | Optimize tool descriptions | Titles exposed via shared definitions; descriptions are compact and `copy_path` is explicitly file-only |
-| BL-254 | Done | Update JSON schema snapshots and unit tests | Runtime/catalog contract test covers names, titles, descriptions, required/property fields, and `additionalProperties` |
-| BL-255 | Done | Update smoke tests and MCP `tools/call` tests | Registry/router/call plus default, read-only, negative, Existing/Missing, and Move-as-Rename smoke contracts updated |
-| BL-256 | Done | Update tool docs, client examples, and catalog | README, current architecture/security/testing docs, tool docs, conventions, catalog, ADR amendments, and migration coordinated |
-| BL-257 | Done | Document breaking changes in changelog | Breaking pre-1.0 cleanup documented with no alias or artificial deprecation compatibility |
+| BL-279 | Done | Rename `list_files` to `list_directory` | Code, closed schema, runtime validation, tests, docs, catalog, examples, and smoke updated |
+| BL-280 | Done | Rename `stat_path` to `get_path_info` | Single-stat existing/missing contract implemented without exposing host paths |
+| BL-281 | Done | Rename `mkdir` to `create_directory` | Parent creation retained; `created` now reflects the actual leaf state |
+| BL-282 | Done | Remove `exists_path` | MCP tool and redundant core method removed; no compatibility alias |
+| BL-283 | Done | Remove `rename_path` | MCP tool and redundant core alias removed; `move_path` covers rename and movement |
+| BL-284 | Done | Define `move_path` rename/move semantics | Same-path/SameFile, overwrite type combinations, same-volume/cross-volume, Windows case aliases, hardlinks, and self-subtree covered; no copy/delete fallback |
+| BL-285 | Done | Define missing-path `get_path_info` result | Genuine missing returns `{ "path": ..., "exists": false }`; all policy denials remain errors |
+| BL-286 | Done | Define normalized filesystem error codes | Safe sprint-local categories map expected failures to `-32602` and unexpected I/O to `-32603`; stable wire objects remain later work |
+| BL-287 | Done | Review input/output schemas and required fields | Strict object/EOF/unknown-field validation, non-blank paths, optional list path, and `maxBytes >= 1` implemented |
+| BL-288 | Done | Optimize tool descriptions | Titles exposed via shared definitions; descriptions are compact and `copy_path` is explicitly file-only |
+| BL-289 | Done | Update JSON schema snapshots and unit tests | Runtime/catalog contract test covers names, titles, descriptions, required/property fields, and `additionalProperties` |
+| BL-290 | Done | Update smoke tests and MCP `tools/call` tests | Registry/router/call plus default, read-only, negative, Existing/Missing, and Move-as-Rename smoke contracts updated |
+| BL-291 | Done | Update tool docs, client examples, and catalog | README, current architecture/security/testing docs, tool docs, conventions, catalog, ADR amendments, and migration coordinated |
+| BL-292 | Done | Document breaking changes in changelog | Breaking pre-1.0 cleanup documented with no alias or artificial deprecation compatibility |
 
 ### Sprint 3.44 Codex read-only activation preparation
 
 | ID | Status | Task | Scope and acceptance notes |
 |---|---|---|---|
-| BL-258 | Done | Add Codex read-only configuration example | Prepared, not applied: verified binary, implementation name (`serverInfo.name`), cleaned tools, explicit root/read-only environment, and unconfirmed fields clearly marked |
-| BL-259 | Done | Add Claude Desktop configuration example | Prepared Windows-oriented example plus Linux perspective with renamed artifact; no client changed |
-| BL-260 | Done | Add general MCP client examples | Minimal local STDIO contract uses absolute binary/root and explicit read-only/CWD policy |
-| BL-261 | Done | Add read-only troubleshooting guide | Safe categories cover root, permissions/policy, JSON-RPC, binary, and profile/tool-list issues without raw host details |
-| BL-262 | Done | Create activation checklist | Covers commit/binary/hash, root, read-only profile, exact tools/list, positive/negative smokes, backup, acceptance, and rollback |
-| BL-263 | Done | Update read-only smoke test | Exact three read-only tools; all five write and five legacy names negative; Windows/Ubuntu startup smokes verify stdout/stderr, root failures, and cleanup |
-| BL-264 | Done | Validate new documentation paths and links | Current FlashGate paths used; legacy installation paths remain only in immutable migration/history context |
-| BL-265 | Done | Document non-developer read-only validation | Script-based binary/hash/root/tool-list/negative/rollback checklist requires no Go build at client start |
-| BL-266 | Done | Keep activation external to preparation sprint | No real Codex configuration, MCP entry, or auth file changed; activation remains a separately confirmed post-merge step |
+| BL-293 | Done | Add Codex read-only configuration example | Prepared, not applied: verified binary, implementation name (`serverInfo.name`), cleaned tools, explicit root/read-only environment, and unconfirmed fields clearly marked |
+| BL-294 | Done | Add Claude Desktop configuration example | Prepared Windows-oriented example plus Linux perspective with renamed artifact; no client changed |
+| BL-295 | Done | Add general MCP client examples | Minimal local STDIO contract uses absolute binary/root and explicit read-only/CWD policy |
+| BL-296 | Done | Add read-only troubleshooting guide | Safe categories cover root, permissions/policy, JSON-RPC, binary, and profile/tool-list issues without raw host details |
+| BL-297 | Done | Create activation checklist | Covers commit/binary/hash, root, read-only profile, exact tools/list, positive/negative smokes, backup, acceptance, and rollback |
+| BL-298 | Done | Update read-only smoke test | Exact three read-only tools; all five write and five legacy names negative; Windows/Ubuntu startup smokes verify stdout/stderr, root failures, and cleanup |
+| BL-299 | Done | Validate new documentation paths and links | Current FlashGate paths used; legacy installation paths remain only in immutable migration/history context |
+| BL-300 | Done | Document non-developer read-only validation | Script-based binary/hash/root/tool-list/negative/rollback checklist requires no Go build at client start |
+| BL-301 | Done | Keep activation external to preparation sprint | No real Codex configuration, MCP entry, or auth file changed; activation remains a separately confirmed post-merge step |
 
 ### Documentation and client compatibility epic
 
 | ID | Status | Task | Scope and acceptance notes |
 |---|---|---|---|
-| BL-267 | Done | Link planning and history from README | Backlog, roadmap, changelog, architecture, security, ADRs |
-| BL-268 | Planned | Keep CHANGELOG updated each sprint | Added/Changed/Security and breaking changes |
-| BL-269 | Planned | Keep BACKLOG updated each sprint | Canonical IDs, sprint refs, migration rule, completed status |
-| BL-270 | Planned | Maintain FlashGate project identity reference | Name, tagline, scope, transition, planned identifiers |
-| BL-271 | Planned | Maintain architecture and ADRs | Current/target/planned/deferred separation |
-| BL-272 | Planned | Document benchmark method and baselines | Sprint 3.45a documents the tool-result-contract subset and single-machine noise limits; broader benchmark documentation remains planned |
-| BL-273 | Planned | Document capabilities, profiles, and named roots | Configuration and security model |
-| BL-274 | Planned | Document Operations/Job Manager | Handles, states, limits, lifecycle, cleanup |
-| BL-275 | Planned | Document process and execution security | Handles, PIDs, allowlists, isolation, redaction |
-| BL-276 | Planned | Document open-source governance, modules/providers, and MCP extensions | Separate local provider and negotiated protocol-extension decision gates |
-| BL-277 | Planned | Maintain non-developer smoke-test documentation | PowerShell/Bash and expected results |
-| BL-278 | Planned | Review README, CHANGELOG, and BACKLOG each sprint | Prevent stale identity, implementation, and planning claims |
+| BL-302 | Done | Link planning and history from README | Backlog, roadmap, changelog, architecture, security, ADRs |
+| BL-303 | Planned | Keep CHANGELOG updated each sprint | Added/Changed/Security and breaking changes |
+| BL-304 | Planned | Keep BACKLOG updated each sprint | Canonical IDs, sprint refs, migration rule, completed status |
+| BL-305 | Planned | Maintain FlashGate project identity reference | Name, tagline, scope, transition, planned identifiers |
+| BL-306 | Planned | Maintain architecture and ADRs | Current/target/planned/deferred separation |
+| BL-307 | Planned | Document benchmark method and baselines | Sprint 3.45a documents the tool-result-contract subset and single-machine noise limits; broader benchmark documentation remains planned |
+| BL-308 | Planned | Document capabilities, profiles, and named roots | Configuration and security model |
+| BL-309 | Planned | Document Operations/Job Manager | Handles, states, limits, lifecycle, cleanup |
+| BL-310 | Planned | Document process and execution security | Handles, PIDs, allowlists, isolation, redaction |
+| BL-311 | Later | Document external module/provider ecosystem | Post-1.0 provider contract, runtime, security classification, distribution, support, and separation from negotiated MCP extensions |
+| BL-312 | Planned | Maintain non-developer smoke-test documentation | PowerShell/Bash and expected results |
+| BL-313 | Planned | Review README, CHANGELOG, and BACKLOG each sprint | Prevent stale identity, implementation, and planning claims |
 
 ## Cross-epic rules
 
+- `Planned` means required for Version 1.0; `Later` means accepted post-Version-1.0 work. A task changes milestone only through an explicit backlog and documentation decision.
 - Security tasks apply to their domain tasks without duplicating canonical definitions.
+- New installations with configured roots but no explicit profile default to the safe read-only profile; higher-risk profiles require explicit activation.
+- Payload-heavy content is transferred once. Structured metadata, resource handles, and compatibility fallbacks must not duplicate large file, process, search, or binary payloads.
+- Every service request has both an authenticated caller identity and an effective execution backend. Version 1.0 implements the service-account backend only; the user-worker backend is interface-compatible but post-1.0. In-process impersonation is prohibited.
+- Handles, jobs, caches, result resources, temporary files, cancellation, and audit correlation are bound to principal, profile, root, execution backend, and service generation.
+- Global limits are insufficient for service mode; per-principal quotas and fair scheduling are mandatory.
+- Native Go/OS APIs are preferred. External programs require typed no-shell definitions and evidence; interpreter-based adapters are excluded from Version 1.0.
 - Operations/jobs are optional lifecycle infrastructure; short synchronous operations may run directly and domain logic/ownership stays outside the manager.
-- Benchmarks and threat models must justify separate binaries, IPC, indexes, or external adapters/providers.
+- Benchmarks and threat models must justify separate product binaries, indexes, or external adapters/providers. The same-binary local service IPC accepted by ADR-0014 still requires its defined security, compatibility, and benchmark release gates.
 - FlashGate modules/providers and MCP protocol extensions are separate concepts and contracts.
 - Deprecated MCP Roots is never the foundation of named-root authorization.
 - MCP annotations never replace server-side authorization.
 - Planned tool cleanup and technical rename occur only in their dedicated sprints.
-- Before 1.0, breaking changes are allowed but require coordinated tests, documentation, examples, smoke tests, and changelog entries.
+- Before Version 1.0, breaking changes are allowed but require coordinated tests, documentation, examples, smoke tests, and changelog entries. Version 1.0 requires a documented compatibility, deprecation, and migration policy.

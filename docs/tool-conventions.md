@@ -80,3 +80,95 @@ Internal classification uses `not_found`, `already_exists`, `access_denied`, `in
 ## Compatibility
 
 FlashGate MCP is pre-1.0 and was not productively deployed when Sprint 3.43 cleaned the contract. Removed names have no alias or deprecation layer. Clients must update their calls and discovery expectations as described in the dated migration.
+
+## Version 1.0 planned conventions
+
+This section is a target contract. It does not claim that the current eight-tool implementation already follows every rule below.
+
+### Safe profile and catalog exposure
+
+For a new Version 1.0 configuration:
+
+- no valid root causes startup failure;
+- valid roots with no explicit profile select the safe read-only profile;
+- write, process, command, system-sensitive, and destructive capabilities require explicit profile activation;
+- unavailable tools are absent from `tools/list` and direct calls fail with the same generic unavailable-tool contract;
+- tool ordering, schemas, annotations, and profile instructions are deterministic;
+- every profile has an explicit tool-count, catalog-byte, approximate-token, and instruction budget;
+- a catalog fingerprint changes when protocol revision, extension set, profile, capability set, schema, annotations, or relevant configuration changes.
+
+The current `MCP_READ_ONLY` environment switch remains a pre-Version-1.0 compatibility mechanism until the profile configuration migration is implemented.
+
+### Result payload classes
+
+Version 1.0 does not apply text-plus-`structuredContent` duplication indiscriminately to payload-heavy results.
+
+| Class | Examples | Target representation |
+|---|---|---|
+| Small metadata | path status, operation status, counters | compact structured object; text compatibility parity allowed within budget |
+| Structured page | directory, search, process page | structured entries/cursor/counters; optional short text summary only |
+| Text payload | file range, process stdout/stderr | content once plus compact metadata |
+| Binary/media payload | image, archive, arbitrary binary | bounded inline content only below threshold; otherwise opaque resource/result handle |
+| Long-running result | tree, hash batch, copy/move plan | operation/job handle plus bounded pages or result resource |
+
+Every result definition states:
+
+- useful payload field or resource;
+- metadata and counters;
+- truncation/pagination state;
+- cursor or handle TTL where applicable;
+- maximum inline bytes;
+- fallback for clients lacking the preferred representation;
+- authorization binding for later reads.
+
+Opaque handles must not expose absolute host paths. Handles, cursors, jobs, processes, and cached results are bound to caller principal, root, profile, capability set, execution backend, service instance, and expiry.
+
+### Tool annotations
+
+Where the negotiated MCP revision supports them, every tool declares accurate:
+
+- `readOnlyHint`;
+- `destructiveHint`;
+- `idempotentHint`;
+- `openWorldHint`.
+
+Annotations are discovery metadata only. They never replace server-side authorization, path validation, execution-identity selection, or risk policy.
+
+### Partial, batch, and field-bounded operations
+
+New tools prefer one bounded call over repeated scalar calls when this lowers total work and response size. Batch tools:
+
+- enforce per-item and aggregate limits;
+- preserve deterministic input/result ordering;
+- return safe per-item failures where partial completion is valid;
+- expose counters for accepted, completed, skipped, and failed items;
+- do not weaken path or capability validation.
+
+Range, page, field-selection, and cursor arguments are explicit and closed. Default values are conservative and server caps always win.
+
+### Typed command tools
+
+Command execution never accepts a shell command string. A command tool selects a server-defined `command_id` and supplies a closed typed argument object. Each definition fixes or constrains:
+
+- resolved executable path and optional identity/hash/publisher requirement;
+- subcommand and allowed flags;
+- positional argument count and type;
+- path arguments and their authorized root binding;
+- working-directory policy;
+- environment allowlist and fixed values;
+- timeout, output, concurrency, and process-tree limits;
+- network policy where enforceable;
+- response-file, hook, plugin, config-injection, and interpreter restrictions.
+
+The server constructs an argument vector and starts the executable directly. It never reparses a generated shell string.
+
+### Native adapter rule
+
+Runtime implementation preference is:
+
+1. Go standard library;
+2. small platform-specific Go adapter;
+3. direct operating-system API or stable system interface;
+4. allowlisted external native operating-system program only after benchmark and security evidence.
+
+Python, PHP, Node.js, Java, or another interpreter is not a normal runtime dependency. Explicit operating-system scripts may be separate administrator/deployment assets, not hidden runtime requirements of MCP tools.

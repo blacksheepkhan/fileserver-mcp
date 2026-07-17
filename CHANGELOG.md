@@ -6,8 +6,21 @@ The format follows the spirit of [Keep a Changelog](https://keepachangelog.com/)
 
 ## [Unreleased]
 
+### Planning
+
+- Defined the Version 1.0 release boundary: canonical `Planned` backlog tasks are required for the initial stable release and `Later` tasks are accepted post-Version-1.0 work.
+- Adopted hybrid per-root service execution identity. Version 1.0 implements dedicated service-account roots (Variant A), defines backend-neutral contracts for later per-user workers (Variant B), and permanently excludes in-process impersonation (Variant C).
+- Added the native multi-mode runtime plan for direct STDIO, proxy, auto, Windows SCM service, and Linux systemd service operation in one native binary. User-scoped persistent hosts and the per-user worker runtime remain post-Version-1.0.
+- Added payload-class result contracts, single-transmission rules for large content, opaque identity-bound result resources, wire-amplification metrics, profile catalog/instruction budgets, deterministic catalog fingerprints, and bounded server instructions.
+- Added Version 1.0 plans for per-principal quotas and fair scheduling, typed no-shell command definitions, native OS adapter precedence, audit lifecycle/correlation, MCP 2026 compatibility preparation, supply-chain evidence, and a pinned cross-project efficiency benchmark.
+- Added ADR-0015, Version 1.0 scope, execution-identity backend, efficiency-improvement, comparative-review, runtime/service, protocol, specification, and roadmap documentation.
+- Expanded the canonical backlog to the continuous range `BL-001` through `BL-313`; see the dated Version 1.0 efficiency/hybrid ID migration document.
+
 ### Changed
 
+- Sprint 3.45d establishes a reproducible Windows/Linux resource, startup, latency, payload, filesystem-counter, call-count, and approximate-token benchmark baseline without changing public MCP tool contracts.
+- Existing tool-result serialization fixtures now retain their historical/text/text-plus-structured measurements while also pinning full JSON-RPC response bytes; direct `tools/call` and both `tools/list` profiles have dedicated in-process benchmarks.
+- Deterministic wire/counter regression budgets are hard local gates, while startup, latency, RSS/working-set, and CPU budgets remain soft review warnings; full CI benchmark comparison stays deferred to BL-247 and BL-248.
 - Sprint 3.45b exposes runtime `outputSchema` for all eight filesystem tools, with deep parity to catalog `resultSchema` and no changes to tool names or successful domain results.
 - Sprint 3.45a wraps every successful filesystem `tools/call` result in an MCP 2025-11-25 `CallToolResult` with one compact JSON `TextContent` block and the same domain object in `structuredContent`.
 - All eight filesystem tools use one central adapter wrapper; internal filesystem and domain result types remain protocol-independent.
@@ -40,6 +53,7 @@ The format follows the spirit of [Keep a Changelog](https://keepachangelog.com/)
 
 ### Added
 
+- Sprint 3.45d adds the development-only `cmd/benchmark` STDIO runner, Win32 and Linux procfs process metrics, ten machine-readable reference workflows, result schema `flashgate-benchmark/v1`, a Windows quick baseline, local budget evaluation, and PowerShell/Bash launch scripts.
 - Sprint 3.45a adds explicit `TextContent` and `CallToolResult` protocol DTOs, a strict project-local decoder with legacy unwrapped negative fixtures, full success/error wire tests, and reproducible tool-result serialization benchmarks.
 - A dated benchmark baseline records historical, text-only, and text-plus-structured payload/runtime/allocation costs without CI budgets.
 

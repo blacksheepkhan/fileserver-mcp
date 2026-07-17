@@ -55,3 +55,26 @@ Inputs are closed objects and are strictly decoded at runtime. `get_path_info` u
 Sprint 3.45a chooses MCP `CallToolResult` variant B for every successful call from all eight filesystem tools: one `TextContent` block contains compact deterministic JSON, and `structuredContent` contains the same domain object. Protocol conformance takes precedence over minimizing the duplicated payload. Reproducible benchmarks record response bytes, runtime, and allocations for the historical direct form, text-only form, and selected text-plus-structured form without setting CI budgets from a single machine.
 
 Typed domain results and the filesystem core remain independent of MCP. Runtime `outputSchema` is a separate all-eight-tool gate. The existing safe JSON-RPC tool-error model is not partially migrated; BL-203 remains responsible for a complete normalized `isError=true` contract.
+
+## Implementation Amendment - 2026-07-15
+
+Sprint 3.45d implements BL-189 through BL-199 as a three-layer measurement baseline. Existing serialization fixtures remain authoritative and now also report complete JSON-RPC response bytes. Additional in-process benchmarks cover direct `tools/call` handling and schema-bearing `tools/list` responses for read-only and default profiles.
+
+A development-only runner starts the real built server over STDIO, validates initialization and optional calls, samples process resources while the server remains alive, closes stdin, and requires controlled exit. `first_process_start` means the first process after the local script build step; no operating-system cold-cache guarantee is claimed. The standard run uses one first start plus 30 subsequent starts, and quick mode uses 10 subsequent starts.
+
+Windows uses Win32 current/peak working set and user/kernel CPU time. Linux uses procfs `VmRSS`, `VmHWM`, and user/system CPU ticks. Other platforms explicitly report `not_supported` and omit numeric resource fields. Ten read-only reference workflows define request, response, result, filesystem-byte, entry, call, duration, and approximate-token measurements without adding counters to MCP tool results.
+
+Machine-readable format `flashgate-benchmark/v1` excludes host paths and private environment data. Deterministic tool/schema counts, wire sizes, stable allocation records, workflow calls, and counters are hard local budgets. Startup, p50/p95, working set, and CPU are soft review budgets. Full CI execution and cross-run baseline comparison remain deferred to BL-247 and BL-248.
+
+The sole token orientation is `ceil(UTF-8 bytes / 4)`. It is not model-specific, does not use a tokenizer, and is not suitable for billing.
+## Planning Amendment - 2026-07-17
+
+The current all-tool text-plus-`structuredContent` parity remains an implementation fact, but Version 1.0 adopts payload classes rather than applying that duplication to every future result. Small metadata may retain compact parity for client compatibility. Payload-heavy file text, binary/media data, search pages, trees, and process output must appear once, with separate compact structured metadata or an identity-bound resource handle.
+
+Version 1.0 adds hard measurement of wire amplification, useful payload bytes, approximate token cost per useful byte, catalog/instruction size, and proxy/service overhead. It also adds opaque `flashgate://` result handles, deterministic catalog fingerprints, profile-specific instructions, and bounded resource-link/inline fallbacks.
+
+The profile target changes the default from a broad implicit profile to: fail when no root is configured; use safe read-only when roots exist but no explicit profile is selected; require explicit activation for write, process, command, or other high-risk capabilities.
+
+Normal runtime implementation prefers Go standard library and native OS adapters. External native programs require typed no-shell definitions plus benchmark and security evidence. Interpreter-based runtime adapters are excluded from Version 1.0. Conditional read/not-modified contracts are accepted post-Version 1.0.
+
+See [Efficiency Improvement Plan](../efficiency-improvement-plan.md) and `BL-213` through `BL-220`.

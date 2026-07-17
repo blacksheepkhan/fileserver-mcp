@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://flashgate.local/schemas/benchmark-baseline-v1.json",
+  "title": "FlashGate MCP benchmark baseline",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project",
+    "commit",
+    "working_tree_dirty",
+    "generated_at_utc",
+    "go_version",
+    "os",
+    "architecture",
+    "repetitions",
+    "start_measurements",
+    "resource_measurements",
+    "tools_list_measurements",
+    "workflow_measurements",
+    "budget_evaluation",
+    "warnings",
+    "unsupported_metrics"
+  ],
+  "properties": {
+    "schema_version": { "const": "flashgate-benchmark/v1" },
+    "project": { "const": "flashgate-mcp" },
+    "commit": { "type": "string", "pattern": "^(unknown|[0-9a-f]{7,40})$" },
+    "working_tree_dirty": { "type": "boolean" },
+    "generated_at_utc": { "type": "string", "format": "date-time" },
+    "go_version": { "type": "string", "minLength": 1 },
+    "os": { "type": "string", "minLength": 1 },
+    "architecture": { "type": "string", "minLength": 1 },
+    "repetitions": { "type": "integer", "minimum": 1 },
+    "start_measurements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["first_process_start", "subsequent_process_start"],
+      "properties": {
+        "first_process_start": { "$ref": "#/$defs/startMeasurement" },
+        "subsequent_process_start": { "$ref": "#/$defs/startMeasurement" }
+      }
+    },
+    "resource_measurements": { "$ref": "#/$defs/resources" },
+    "tools_list_measurements": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/toolsListMeasurement" }
+    },
+    "workflow_measurements": {
+      "type": "array",
+      "minItems": 10,
+      "items": { "$ref": "#/$defs/workflowMeasurement" }
+    },
+    "budget_evaluation": {
+      "type": "object",
+      "required": ["schema_version", "hard_failures", "soft_warnings", "messages"],
+      "properties": {
+        "schema_version": { "const": "flashgate-benchmark-budgets/v1" },
+        "hard_failures": { "type": "integer", "minimum": 0 },
+        "soft_warnings": { "type": "integer", "minimum": 0 },
+        "messages": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "unsupported_metrics": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "metricSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["samples", "min", "p50", "p95", "max"],
+      "properties": {
+        "samples": { "type": "integer", "minimum": 0 },
+        "min": { "type": "integer", "minimum": 0 },
+        "p50": { "type": "integer", "minimum": 0 },
+        "p95": { "type": "integer", "minimum": 0 },
+        "max": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["supported", "not_supported"] },
+        "idle_working_set_bytes": { "$ref": "#/$defs/metricSummary" },
+        "peak_working_set_bytes": { "$ref": "#/$defs/metricSummary" },
+        "user_cpu_ns": { "$ref": "#/$defs/metricSummary" },
+        "system_cpu_ns": { "$ref": "#/$defs/metricSummary" }
+      }
+    },
+    "startMeasurement": {
+      "type": "object",
+      "required": ["repetitions", "duration_ns", "request_bytes", "response_bytes", "result_bytes", "resources", "exit_statuses", "stderr_warnings", "stderr_warning_count"],
+      "properties": {
+        "repetitions": { "type": "integer", "minimum": 1 },
+        "duration_ns": { "$ref": "#/$defs/metricSummary" },
+        "request_bytes": { "$ref": "#/$defs/metricSummary" },
+        "response_bytes": { "$ref": "#/$defs/metricSummary" },
+        "result_bytes": { "$ref": "#/$defs/metricSummary" },
+        "resources": { "$ref": "#/$defs/resources" },
+        "exit_statuses": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+        "stderr_warnings": { "type": "array", "items": { "type": "string" } },
+        "stderr_warning_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "toolsListMeasurement": {
+      "type": "object",
+      "required": ["profile", "tool_count", "schema_count", "request_bytes", "response_bytes", "result_bytes", "approx_tokens_bytes4"],
+      "properties": {
+        "profile": { "enum": ["read_only", "default"] },
+        "tool_count": { "type": "integer", "minimum": 0 },
+        "schema_count": { "type": "integer", "minimum": 0 },
+        "request_bytes": { "type": "integer", "minimum": 0 },
+        "response_bytes": { "type": "integer", "minimum": 0 },
+        "result_bytes": { "type": "integer", "minimum": 0 },
+        "approx_tokens_bytes4": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "workflowMeasurement": {
+      "type": "object",
+      "required": ["name", "repetitions", "calls", "request_bytes", "response_bytes", "result_bytes", "duration_ns", "read_bytes", "written_bytes", "scanned_bytes", "entries", "approx_tokens_bytes4", "resources", "exit_statuses", "stderr_warnings", "stderr_warning_count"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "repetitions": { "type": "integer", "minimum": 1 },
+        "calls": { "type": "integer", "minimum": 0 },
+        "request_bytes": { "$ref": "#/$defs/metricSummary" },
+        "response_bytes": { "$ref": "#/$defs/metricSummary" },
+        "result_bytes": { "$ref": "#/$defs/metricSummary" },
+        "duration_ns": { "$ref": "#/$defs/metricSummary" },
+        "read_bytes": { "$ref": "#/$defs/metricSummary" },
+        "written_bytes": { "$ref": "#/$defs/metricSummary" },
+        "scanned_bytes": { "$ref": "#/$defs/metricSummary" },
+        "entries": { "$ref": "#/$defs/metricSummary" },
+        "approx_tokens_bytes4": { "$ref": "#/$defs/metricSummary" },
+        "resources": { "$ref": "#/$defs/resources" },
+        "exit_statuses": { "type": "object" },
+        "stderr_warnings": { "type": "array", "items": { "type": "string" } },
+        "stderr_warning_count": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}
