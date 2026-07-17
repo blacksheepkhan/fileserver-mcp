@@ -402,6 +402,8 @@ The standard mode records one `first_process_start` and 30 `subsequent_process_s
 
 Detailed counter semantics, platform behavior, reference workflows, result schema, baseline, and hard-versus-soft budgets are documented in [`benchmarks/README.md`](benchmarks/README.md). The approximation `approx_tokens_bytes4 = ceil(UTF-8 bytes / 4)` is not model-specific and is not suitable for billing.
 
+Versioned baselines are recorded only from a clean tree and only after the implementation commit. Generate the clean Windows and native Linux baselines from that same commit, then commit those artifacts separately. Ordinary local runs may use a dirty tree and record that provenance explicitly.
+
 `cmd/benchmark` is development-only. It is built by the local benchmark scripts and is not included in release artifacts.
 
 ## Release Builds

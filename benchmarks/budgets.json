@@ -20,7 +20,7 @@
     "workflows": {
       "initialize": {
         "calls": 0,
-        "max_request_bytes": 166,
+        "max_request_bytes": 221,
         "max_response_bytes": 151,
         "max_result_bytes": 116,
         "max_read_bytes": 0,
@@ -30,7 +30,7 @@
       },
       "initialize_tools_list": {
         "calls": 0,
-        "max_request_bytes": 225,
+        "max_request_bytes": 280,
         "max_response_bytes": 2285,
         "max_result_bytes": 2215,
         "max_read_bytes": 0,
@@ -40,7 +40,7 @@
       },
       "get_path_info_existing": {
         "calls": 1,
-        "max_request_bytes": 283,
+        "max_request_bytes": 338,
         "max_response_bytes": 426,
         "max_result_bytes": 356,
         "max_read_bytes": 0,
@@ -50,7 +50,7 @@
       },
       "get_path_info_missing": {
         "calls": 1,
-        "max_request_bytes": 282,
+        "max_request_bytes": 337,
         "max_response_bytes": 326,
         "max_result_bytes": 256,
         "max_read_bytes": 0,
@@ -60,27 +60,27 @@
       },
       "read_file_small": {
         "calls": 1,
-        "max_request_bytes": 276,
+        "max_request_bytes": 331,
         "max_response_bytes": 355,
         "max_result_bytes": 285,
         "max_read_bytes": 26,
         "max_written_bytes": 0,
-        "max_scanned_bytes": 26,
+        "max_scanned_bytes": 0,
         "max_entries": 0
       },
       "read_file_64kib": {
         "calls": 1,
-        "max_request_bytes": 281,
+        "max_request_bytes": 336,
         "max_response_bytes": 131378,
         "max_result_bytes": 131308,
         "max_read_bytes": 65536,
         "max_written_bytes": 0,
-        "max_scanned_bytes": 65536,
+        "max_scanned_bytes": 0,
         "max_entries": 0
       },
       "list_directory_small": {
         "calls": 1,
-        "max_request_bytes": 281,
+        "max_request_bytes": 336,
         "max_response_bytes": 538,
         "max_result_bytes": 468,
         "max_read_bytes": 0,
@@ -90,7 +90,7 @@
       },
       "list_directory_500_entries": {
         "calls": 1,
-        "max_request_bytes": 281,
+        "max_request_bytes": 336,
         "max_response_bytes": 53680,
         "max_result_bytes": 53610,
         "max_read_bytes": 0,
@@ -100,7 +100,7 @@
       },
       "multiple_path_checks": {
         "calls": 10,
-        "max_request_bytes": 1458,
+        "max_request_bytes": 1513,
         "max_response_bytes": 3123,
         "max_result_bytes": 2736,
         "max_read_bytes": 0,
@@ -110,12 +110,12 @@
       },
       "multiple_file_reads": {
         "calls": 10,
-        "max_request_bytes": 1408,
+        "max_request_bytes": 1463,
         "max_response_bytes": 2193,
         "max_result_bytes": 1806,
         "max_read_bytes": 260,
         "max_written_bytes": 0,
-        "max_scanned_bytes": 260,
+        "max_scanned_bytes": 0,
         "max_entries": 0
       }
     },

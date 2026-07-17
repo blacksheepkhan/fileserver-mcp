@@ -24,7 +24,7 @@ Windows quick run (one first process plus 10 subsequent processes and 10 repetit
 & ".\scripts\benchmark.ps1" -Quick
 ```
 
-Record an explicitly reviewable Windows baseline:
+Record an explicitly reviewable Windows baseline from a clean working tree:
 
 ```powershell
 & ".\scripts\benchmark.ps1" -Quick -RecordBaseline
@@ -38,6 +38,14 @@ bash scripts/benchmark.sh --quick
 bash scripts/benchmark.sh --quick --record-baseline
 ```
 
+## Measurement environment
+
+The primary Windows development host has a known resource-intensive scheduled workload every day from 19:00 inclusive until 04:00 exclusive in the `Europe/Vienna` time zone. Performance, latency, startup, CPU, memory, resource, cross-platform, and regression baselines must not be recorded, approved, compared, or used to tune budgets during that blocked window. The preferred measurement window with safety margin is 04:15–18:45 `Europe/Vienna`, and a complete measurement series must finish before 19:00.
+
+The time window is necessary but not sufficient: known or unusual additional host load invalidates a baseline even during otherwise allowed hours. The measurement report must record the time zone, start/end window, and host-load status. Quick runs are diagnostic observations, not automatic release baselines. Contaminated runs remain diagnosis evidence but are not approval artifacts, and they must never be replaced or selectively cherry-picked in favor of more favorable individual measurements.
+
+Functional tests, builds, vet, and lint remain valid during the blocked window, but any incidental timing or resource values from those commands are not performance evidence. Normal benchmark runs may execute during the blocked window and are explicitly marked contaminated. Baseline-recording modes fail before build/measurement and check the window again immediately before publishing the candidate.
+
 Run only the in-process benchmarks:
 
 ```bash
@@ -48,9 +56,9 @@ go test -run '^$' -bench 'Benchmark(CallToolResultSerialization|CallToolHandlerP
 
 `first_process_start` is the first new server process started by the benchmark immediately after the scripts build both binaries. `subsequent_process_start` contains later new processes in the same run. These labels do not claim that an operating-system cold filesystem or executable cache was guaranteed or cleared.
 
-Startup duration begins immediately before the operating-system process start call and ends when a valid `initialize` response has been received. Workflow duration begins at the same point and ends when the final valid response for the workflow has been received. Controlled stdin closure and process exit validation happen after the measured response interval.
+Startup duration begins immediately before the operating-system process start call and ends when a valid `initialize` response has been received. The runner validates the negotiated protocol version, `serverInfo`, and `capabilities`, then sends the no-ID `notifications/initialized` notification before any later request or controlled exit. Workflow duration begins at process start and ends when the final valid response has been received. Controlled stdin closure and process exit validation happen after the measured response interval.
 
-On Windows, the runner uses `OpenProcess`, `GetProcessMemoryInfo`, and `GetProcessTimes` to read current/peak working set plus user/kernel CPU time. On Linux, it reads `VmRSS` and `VmHWM` from `/proc/<pid>/status` and user/system CPU ticks from `/proc/<pid>/stat`. Other operating systems report resource status `not_supported`, omit unsupported numeric metrics, and list the metric names in `unsupported_metrics`; they never emit plausible zero placeholders.
+On Windows, the runner uses `OpenProcess`, `GetProcessMemoryInfo`, and `GetProcessTimes` to read current/peak working set plus user/kernel CPU time. On Linux, it reads `VmRSS` and `VmHWM` from `/proc/<pid>/status` and user/system CPU ticks from `/proc/<pid>/stat` independently. Available Linux values remain present when another metric is missing; each missing value is named in `unsupported_metrics`. Other operating systems report resource status `not_supported`, omit unsupported numeric metrics, and never emit plausible zero placeholders.
 
 Idle working set is sampled immediately after `initialize`. Peak working set and CPU time are sampled after the final workflow response while the server is still alive.
 
@@ -61,13 +69,13 @@ Idle working set is sampled immediately after `initialize`. Peak working set and
 - `result_bytes`: only the serialized JSON value in the JSON-RPC `result` member.
 - `read_bytes`: content bytes successfully returned by `read_file`.
 - `written_bytes`: content bytes successfully written or copied; all Sprint 3.45d read-only reference workflows correctly report zero.
-- `scanned_bytes`: content bytes actually inspected; for the current read workflows this equals successfully read content bytes. Metadata and directory enumeration do not scan file content.
+- `scanned_bytes`: bytes actually inspected for search, hashing, classification, or comparable content analysis. All Sprint 3.45d read-only workflows report zero; ordinary `read_file` return bytes are not scans.
 - `entries`: directory entries actually returned by successful reference calls.
 - `calls`: `tools/call` requests actually executed successfully. `initialize` and `tools/list` are not counted.
 
 These benchmark counters are runner-side measurements only. Sprint 3.45d does not add them to public MCP tool results.
 
-All byte counts include the initialization exchange when initialization is part of a named workflow. The separate `tools_list_measurements` entries contain only the `tools/list` request and response.
+Workflow request byte counts include the initialization request and the 55-byte `notifications/initialized` JSONL notification. The notification has no response and never increments `calls`. The separate `tools_list_measurements` entries contain only the `tools/list` request and response.
 
 ## Reference workflows
 
@@ -87,20 +95,22 @@ It is an orientation only, is not model-specific, does not use a tokenizer, and 
 
 ## Baselines and budgets
 
-`baseline.schema.json` defines result format `flashgate-benchmark/v1`. A result records project, commit, whether the binary came from a dirty working tree, Go version, OS, architecture, repetitions, starts, resources, `tools/list`, workflows, warnings, budget evaluation, and unsupported metrics.
+`baseline.schema.json` defines result format `flashgate-benchmark/v1`. A result records project, commit, whether the binary came from a dirty working tree, Go version, OS, architecture, repetitions, starts, resources, `tools/list`, workflows, warnings, budget evaluation, unsupported metrics, and stable suite/catalog/corpus plus runtime/transport/backend/profile/parallelism provenance.
+
+Versioned baseline creation is deliberately two-stage. First commit the implementation without a platform baseline. Then, on that clean implementation commit and within the valid measurement window, generate Windows and native Linux baselines and commit those artifacts separately. `-RecordBaseline` and `--record-baseline` reject the scheduled host-load window and a dirty tree before measurement, then recheck both the time window and tree immediately before the candidate file is moved into its versioned location. Ordinary local benchmark results remain allowed on dirty trees and record `working_tree_dirty: true` accurately, but results collected during the scheduled host-load window are contaminated diagnosis only.
 
 Versioned results must not contain absolute host paths, user names, secrets, temporary directory names, or raw private environment variables. The runner never serializes its binary path, corpus root, or environment and replaces known paths in captured stderr.
 
 `budgets.json` separates deterministic hard contracts from noisy soft review limits:
 
-- Hard: tool/schema counts, wire/result byte maxima, reference workflow calls/counters, and stable selected-result allocation/payload records.
+- Hard: complete and exact tool-profile/workflow measurement sets, tool/schema counts, wire/result byte maxima, reference workflow calls/counters, and all six selected-result allocation/payload records loaded from `budgets.json`.
 - Soft: startup p95, workflow p95, idle/peak working set, and CPU time.
 
 A hard failure makes the local benchmark command fail after writing its JSON result. A soft excess is recorded as a warning for review. Sprint 3.45d does not add the full process benchmark to CI; cross-run baseline comparison and CI enforcement remain BL-247 and BL-248.
 
 ## Version 1.0 benchmark expansion
 
-The existing Sprint 3.45d baseline remains a historical current-implementation baseline. It is not retroactively rewritten when Version 1.0 contracts change.
+Sprint 3.45d baselines are created only after the corrected implementation commit is clean. They are not retroactively rewritten when Version 1.0 contracts change.
 
 Version 1.0 extends the benchmark system with the following measurements:
 
@@ -145,3 +155,24 @@ The comparison uses the same host, corpus, requested functionality, warm-up poli
 ## Version 1.0 release use
 
 The Version 1.0 gate in `BL-261` requires approved hard budgets for deterministic protocol/catalog/payload contracts and reviewed soft budgets for host-sensitive latency, CPU, and memory. New optional accelerators or external programs are not accepted into the initial release unless they demonstrate a material benefit and pass the same security and portability review.
+
+<!-- FLASHGATE_PERFORMANCE_WORKSPACE_POLICY_START -->
+## Primary Windows host workspace isolation
+
+Authoritative performance and baseline attempts on the primary Windows
+development host use the local workspace:
+
+`C:\Voxtronic\Codex\Temp\Benchmarks`
+
+The source bundle, Windows checkout, prepared binaries, output JSON files, logs,
+verification evidence, and measurement controller must remain below that local
+root until both platform measurements and the final host-load gate are complete.
+
+OneDrive, Dropbox, redirected profile folders, network shares, and other
+synchronized locations are not valid measurement workspaces. Final reports and
+review bundles may be copied to archival synchronized storage only after the
+measured phase has ended.
+
+Native Linux measurements continue to use the distribution's native ext4
+filesystem under `/home`, never a Windows-mounted path such as `/mnt`.
+<!-- FLASHGATE_PERFORMANCE_WORKSPACE_POLICY_END -->

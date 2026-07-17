@@ -150,7 +150,7 @@ Future protocol or extension support still requires version-negotiation, extensi
 
 ### Benchmarks
 
-Benchmarks will be added for performance-sensitive operations such as:
+Sprint 3.45d benchmarks performance-sensitive operations including:
 
 - directory listing
 - file reading
@@ -163,6 +163,12 @@ Benchmark command:
 ```bash
 go test -bench=. ./...
 ```
+
+The deterministic benchmark tests also enforce the exact tool-profile and workflow measurement sets, the six payload/allocation budgets from `benchmarks/budgets.json`, initialized-notification framing, initialization-result validation, zero `scanned_bytes` for ordinary reads, partial Linux procfs metrics, host-path redaction, and clean versioned artifacts. Platform baseline generation is a second step after the implementation commit; dirty-tree baseline recording is rejected before measurement and immediately before publication.
+
+Functional gates such as tests, builds, vet, lint, protocol smokes, and parser checks are independent of the host measurement window. Their timing and resource consumption are not performance evidence. Performance gates are valid only when the entire measurement series runs outside the primary development host's scheduled-load block from 19:00 inclusive until 04:00 exclusive in `Europe/Vienna`; the preferred safety-margin window is 04:15–18:45, and the series must finish before 19:00. The blocked interval is a formal baseline blocker.
+
+Every performance measurement report records the `Europe/Vienna` time window, start and end times, and whether known or unusual additional host load was present. A baseline is rejected if such load is known or observed even inside the nominally allowed interval. Contaminated runs are retained as diagnosis evidence without being approved, compared for regression, or used to tune budgets. The baseline scripts enforce the scheduled window before build/measurement and immediately before publication; ordinary runs may continue but are marked contaminated.
 
 ## Current Tested Packages
 
@@ -279,3 +285,25 @@ Before Version 1.0, publish and test the supported MCP revision matrix:
 The Version 1.0 benchmark compares pinned FlashGate, official Node.js filesystem, selected native Rust filesystem, and selected Go filesystem MCP versions on the same host and corpus. The report must separate feature/security differences from measured performance and must not claim results for unmeasured operations.
 
 See [Efficiency Improvement Plan](efficiency-improvement-plan.md), [Execution Identity Backends](execution-identity-backends.md), and [Version 1.0 Scope](version-1-scope-and-release-boundary.md).
+
+<!-- FLASHGATE_PERFORMANCE_WORKSPACE_POLICY_START -->
+## Authoritative benchmark workspace gate
+
+On the primary Windows development host, an authoritative benchmark attempt is
+blocked unless its Windows working area is below:
+
+`C:\Voxtronic\Codex\Temp\Benchmarks`
+
+Before the attempt, verify that the root is a fixed local NTFS path, contains no
+reparse point, and is not below OneDrive, Dropbox, a redirected user directory,
+a network share, or other synchronized storage.
+
+All source bundles, isolated Windows checkouts, prepared binaries, measurement
+outputs, logs, verification files, and controller data stay in that local area
+through the final host-load gate. Archival copying to synchronized storage occurs
+only afterward and is not part of the measured phase.
+
+The native Linux checkout and temporary output remain on the distribution's
+native ext4 filesystem under `/home`. A path below `/mnt` or `/media` is a formal
+baseline blocker.
+<!-- FLASHGATE_PERFORMANCE_WORKSPACE_POLICY_END -->

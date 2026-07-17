@@ -5,45 +5,45 @@
   "workflows": [
     {
       "name": "initialize",
-      "steps": ["initialize"],
+      "steps": ["initialize", "notifications/initialized"],
       "tools_call_count": 0
     },
     {
       "name": "initialize_tools_list",
-      "steps": ["initialize", "tools/list"],
+      "steps": ["initialize", "notifications/initialized", "tools/list"],
       "tools_call_count": 0
     },
     {
       "name": "get_path_info_existing",
-      "steps": ["initialize", "tools/call:get_path_info(existing.txt)"],
+      "steps": ["initialize", "notifications/initialized", "tools/call:get_path_info(existing.txt)"],
       "tools_call_count": 1
     },
     {
       "name": "get_path_info_missing",
-      "steps": ["initialize", "tools/call:get_path_info(missing.txt)"],
+      "steps": ["initialize", "notifications/initialized", "tools/call:get_path_info(missing.txt)"],
       "tools_call_count": 1
     },
     {
       "name": "read_file_small",
-      "steps": ["initialize", "tools/call:read_file(small.txt)"],
+      "steps": ["initialize", "notifications/initialized", "tools/call:read_file(small.txt)"],
       "tools_call_count": 1,
       "expected_read_bytes": 26
     },
     {
       "name": "read_file_64kib",
-      "steps": ["initialize", "tools/call:read_file(text-64kib.txt)"],
+      "steps": ["initialize", "notifications/initialized", "tools/call:read_file(text-64kib.txt)"],
       "tools_call_count": 1,
       "expected_read_bytes": 65536
     },
     {
       "name": "list_directory_small",
-      "steps": ["initialize", "tools/call:list_directory(small-dir)"],
+      "steps": ["initialize", "notifications/initialized", "tools/call:list_directory(small-dir)"],
       "tools_call_count": 1,
       "expected_entries": 3
     },
     {
       "name": "list_directory_500_entries",
-      "steps": ["initialize", "tools/call:list_directory(large-dir)"],
+      "steps": ["initialize", "notifications/initialized", "tools/call:list_directory(large-dir)"],
       "tools_call_count": 1,
       "expected_entries": 500
     },
@@ -51,6 +51,7 @@
       "name": "multiple_path_checks",
       "steps": [
         "initialize",
+        "notifications/initialized",
         "10 independent tools/call:get_path_info requests"
       ],
       "tools_call_count": 10
@@ -59,6 +60,7 @@
       "name": "multiple_file_reads",
       "steps": [
         "initialize",
+        "notifications/initialized",
         "10 independent tools/call:read_file requests"
       ],
       "tools_call_count": 10,

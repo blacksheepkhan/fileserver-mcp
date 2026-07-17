@@ -1,16 +1,23 @@
 package tools
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 	"testing"
 
+	benchmarkrunner "github.com/blacksheepkhan/flashgate-mcp/internal/benchmark"
 	"github.com/blacksheepkhan/flashgate-mcp/internal/fs"
+	"github.com/blacksheepkhan/flashgate-mcp/internal/mcp/handlers"
 	"github.com/blacksheepkhan/flashgate-mcp/internal/protocol"
 )
 
 var benchmarkResultSink []byte
+var benchmarkHandlerResultSink any
 
 type textOnlyCallToolResult struct {
 	Content []protocol.TextContent `json:"content"`
@@ -37,6 +44,10 @@ func BenchmarkCallToolResultSerialization(b *testing.B) {
 					if err != nil {
 						b.Fatal(err)
 					}
+					response, err := serializeBenchmarkResponse(sample)
+					if err != nil {
+						b.Fatal(err)
+					}
 					b.ReportAllocs()
 					b.SetBytes(int64(len(sample)))
 					b.ResetTimer()
@@ -48,10 +59,146 @@ func BenchmarkCallToolResultSerialization(b *testing.B) {
 					}
 					b.StopTimer()
 					b.ReportMetric(float64(len(sample)), "payload-bytes")
+					b.ReportMetric(float64(len(response)), "response-bytes")
 				})
 			}
 		})
 	}
+}
+
+func BenchmarkCallToolHandlerProcessing(b *testing.B) {
+	for _, fixture := range callToolHandlerBenchmarkFixtures() {
+		fixture := fixture
+		b.Run(fixture.name, func(b *testing.B) {
+			sample, rpcErr := fixture.handler.Handle(
+				handlers.Context{Context: context.Background()},
+				fixture.params,
+			)
+			if rpcErr != nil {
+				b.Fatalf("sample tools/call failed: %s", rpcErr.Message)
+			}
+			encoded, err := json.Marshal(sample)
+			if err != nil {
+				b.Fatal(err)
+			}
+			response, err := serializeBenchmarkResponse(encoded)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+			b.ReportAllocs()
+			b.SetBytes(int64(len(encoded)))
+			b.ResetTimer()
+			for index := 0; index < b.N; index++ {
+				benchmarkHandlerResultSink, rpcErr = fixture.handler.Handle(
+					handlers.Context{Context: context.Background()},
+					fixture.params,
+				)
+				if rpcErr != nil {
+					b.Fatalf("tools/call failed: %s", rpcErr.Message)
+				}
+			}
+			b.StopTimer()
+			b.ReportMetric(float64(len(encoded)), "result-bytes")
+			b.ReportMetric(float64(len(response)), "response-bytes")
+		})
+	}
+}
+
+func BenchmarkCallToolHandlerProcessingParallel(b *testing.B) {
+	registry := NewRegistry()
+	registry.Register(NewGetPathInfoTool(benchmarkParallelFileSystem{}))
+	handler := NewCallHandler(registry)
+	params := json.RawMessage(`{"name":"get_path_info","arguments":{"path":"existing.txt"}}`)
+	sample, rpcErr := handler.Handle(handlers.Context{Context: context.Background()}, params)
+	if rpcErr != nil {
+		b.Fatalf("sample tools/call failed: %s", rpcErr.Message)
+	}
+	encoded, err := json.Marshal(sample)
+	if err != nil {
+		b.Fatal(err)
+	}
+	response, err := serializeBenchmarkResponse(encoded)
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	b.SetBytes(int64(len(encoded)))
+	var failureOnce sync.Once
+	var failureMessage string
+	b.ResetTimer()
+	b.RunParallel(func(parallel *testing.PB) {
+		for parallel.Next() {
+			result, rpcErr := handler.Handle(handlers.Context{Context: context.Background()}, params)
+			if rpcErr != nil {
+				failureOnce.Do(func() { failureMessage = rpcErr.Message })
+				continue
+			}
+			runtime.KeepAlive(result)
+		}
+	})
+	if failureMessage != "" {
+		b.Fatalf("tools/call failed: %s", failureMessage)
+	}
+	b.StopTimer()
+	b.ReportMetric(float64(len(encoded)), "result-bytes")
+	b.ReportMetric(float64(len(response)), "response-bytes")
+}
+
+type benchmarkParallelFileSystem struct{}
+
+func (benchmarkParallelFileSystem) List(string) ([]fs.Entry, error)    { return nil, nil }
+func (benchmarkParallelFileSystem) Read(string, int64) ([]byte, error) { return nil, nil }
+func (benchmarkParallelFileSystem) Stat(string) (fs.Metadata, error) {
+	return fs.Metadata{Name: "existing.txt", Size: 26}, nil
+}
+func (benchmarkParallelFileSystem) Write(string, []byte, bool) error { return nil }
+func (benchmarkParallelFileSystem) Mkdir(string) (bool, error)       { return false, nil }
+func (benchmarkParallelFileSystem) Delete(string, bool) error        { return nil }
+func (benchmarkParallelFileSystem) Move(string, string, bool) error  { return nil }
+func (benchmarkParallelFileSystem) Copy(string, string, bool) error  { return nil }
+
+type callToolHandlerBenchmarkFixture struct {
+	name    string
+	handler *CallHandler
+	params  json.RawMessage
+}
+
+func callToolHandlerBenchmarkFixtures() []callToolHandlerBenchmarkFixture {
+	result := make([]callToolHandlerBenchmarkFixture, 0, len(callToolResultBenchmarkFixtures()))
+	for _, fixture := range callToolResultBenchmarkFixtures() {
+		filesystem := newFakeFileSystem()
+		registry := NewRegistry()
+		var params json.RawMessage
+
+		switch value := fixture.value.(type) {
+		case getPathInfoMissingResult:
+			filesystem.statErr = fs.ErrNotFound
+			registry.Register(NewGetPathInfoTool(filesystem))
+			params = json.RawMessage(`{"name":"get_path_info","arguments":{"path":"missing.txt"}}`)
+		case getPathInfoExistingResult:
+			filesystem.statMetadata = fs.Metadata{Name: value.Name, IsDir: value.IsDir, Size: value.Size}
+			registry.Register(NewGetPathInfoTool(filesystem))
+			params = json.RawMessage(`{"name":"get_path_info","arguments":{"path":"docs/readme.txt"}}`)
+		case listDirectoryResult:
+			filesystem.entries = value.Entries
+			registry.Register(NewListDirectoryTool(filesystem))
+			params = json.RawMessage(`{"name":"list_directory","arguments":{"path":"fixtures"}}`)
+		case readFileResult:
+			filesystem.readContent = []byte(value.Content)
+			registry.Register(NewReadFileTool(filesystem, 64*1024))
+			params = json.RawMessage(`{"name":"read_file","arguments":{"path":"fixture.txt"}}`)
+		default:
+			panic(fmt.Sprintf("unsupported benchmark fixture %T", fixture.value))
+		}
+
+		result = append(result, callToolHandlerBenchmarkFixture{
+			name:    fixture.name,
+			handler: NewCallHandler(registry),
+			params:  params,
+		})
+	}
+	return result
 }
 
 func serializeTextOnlyCallToolResult(value any) ([]byte, error) {
@@ -70,6 +217,18 @@ func serializeStructuredCallToolResult(value any) ([]byte, error) {
 		return nil, fmt.Errorf("wrap result: %s", rpcErr.Message)
 	}
 	return json.Marshal(wrapped)
+}
+
+func serializeBenchmarkResponse(result []byte) ([]byte, error) {
+	response, err := json.Marshal(protocol.Response{
+		JSONRPC: protocol.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Result:  json.RawMessage(result),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return append(response, '\n'), nil
 }
 
 type callToolResultBenchmarkFixture struct {
@@ -94,5 +253,110 @@ func callToolResultBenchmarkFixtures() []callToolResultBenchmarkFixture {
 		{"directory_500_entries", listDirectoryResult{Entries: largeEntries}},
 		{"text_file_small", readFileResult{Content: "FlashGate benchmark text.\n", Size: 26}},
 		{"text_file_64kib", readFileResult{Content: strings.Repeat("x", 64*1024), Size: 64 * 1024}},
+	}
+}
+
+func TestCallToolResultSerializationPayloadSizes(t *testing.T) {
+	expected := map[string][3]int{
+		"path_info_missing":     {44, 89, 154},
+		"path_info_existing":    {85, 138, 244},
+		"directory_small":       {91, 148, 260},
+		"directory_500_entries": {25897, 29938, 55856},
+		"text_file_small":       {51, 97, 169},
+		"text_file_64kib":       {65563, 65608, 131192},
+	}
+	variants := []struct {
+		name      string
+		serialize func(any) ([]byte, error)
+	}{
+		{"historical_direct", json.Marshal},
+		{"text_only", serializeTextOnlyCallToolResult},
+		{"text_plus_structured", serializeStructuredCallToolResult},
+	}
+
+	for _, fixture := range callToolResultBenchmarkFixtures() {
+		for variantIndex, variant := range variants {
+			fixture := fixture
+			variant := variant
+			t.Run(fixture.name+"/"+variant.name, func(t *testing.T) {
+				result, err := variant.serialize(fixture.value)
+				if err != nil {
+					t.Fatal(err)
+				}
+				wantResult := expected[fixture.name][variantIndex]
+				if len(result) != wantResult {
+					t.Fatalf("result bytes=%d, want %d", len(result), wantResult)
+				}
+				response, err := serializeBenchmarkResponse(result)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if len(response) != wantResult+35 {
+					t.Fatalf("response bytes=%d, want %d", len(response), wantResult+35)
+				}
+			})
+		}
+	}
+}
+
+func TestCallToolResultSerializationBudgets(t *testing.T) {
+	budgetPath := filepath.Join("..", "..", "..", "benchmarks", "budgets.json")
+	budgets, err := benchmarkrunner.LoadSerializationBudgets(budgetPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fixtures := callToolResultBenchmarkFixtures()
+	seenFixtures := make(map[string]struct{}, len(fixtures))
+	usedBudgets := make(map[string]struct{}, len(fixtures))
+	for _, fixture := range fixtures {
+		if fixture.name == "" {
+			t.Fatal("serialization fixture has empty name")
+		}
+		if _, ok := seenFixtures[fixture.name]; ok {
+			t.Fatalf("duplicate serialization fixture %q", fixture.name)
+		}
+		seenFixtures[fixture.name] = struct{}{}
+
+		budgetName := fixture.name + "_text_plus_structured"
+		budget, ok := budgets[budgetName]
+		if !ok {
+			t.Fatalf("serialization fixture %q has no budget", fixture.name)
+		}
+		usedBudgets[budgetName] = struct{}{}
+		if budget.MaxPayloadBytes == 0 || budget.MaxAllocsPerOp == 0 {
+			t.Fatalf("serialization budget %q is structurally incomplete", budgetName)
+		}
+
+		payload, err := serializeStructuredCallToolResult(fixture.value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if uint64(len(payload)) > budget.MaxPayloadBytes {
+			t.Fatalf("serialization fixture %q payload=%d exceeds budget %d", fixture.name, len(payload), budget.MaxPayloadBytes)
+		}
+
+		var allocationErr error
+		allocations := testing.AllocsPerRun(100, func() {
+			result, serializeErr := serializeStructuredCallToolResult(fixture.value)
+			if serializeErr != nil {
+				allocationErr = serializeErr
+			}
+			runtime.KeepAlive(result)
+		})
+		if allocationErr != nil {
+			t.Fatal(allocationErr)
+		}
+		if allocations > float64(budget.MaxAllocsPerOp) {
+			t.Fatalf("serialization fixture %q allocations/op=%.0f exceeds budget %d", fixture.name, allocations, budget.MaxAllocsPerOp)
+		}
+	}
+	for budgetName := range budgets {
+		if _, ok := usedBudgets[budgetName]; !ok {
+			t.Fatalf("unknown serialization budget fixture %q", budgetName)
+		}
+	}
+	if len(usedBudgets) != len(budgets) {
+		t.Fatalf("serialization fixtures=%d budgets=%d", len(usedBudgets), len(budgets))
 	}
 }

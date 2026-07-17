@@ -18,6 +18,7 @@ The format follows the spirit of [Keep a Changelog](https://keepachangelog.com/)
 
 ### Changed
 
+- Sprint 3.45d review corrections enforce clean-only versioned baselines, complete MCP initialization with `notifications/initialized`, validate exact profile/workflow measurement sets, activate all six serialization budgets, preserve partial Linux metrics, harden host-path redaction and cleanup, and define ordinary reads as `read_bytes` without `scanned_bytes`.
 - Sprint 3.45d establishes a reproducible Windows/Linux resource, startup, latency, payload, filesystem-counter, call-count, and approximate-token benchmark baseline without changing public MCP tool contracts.
 - Existing tool-result serialization fixtures now retain their historical/text/text-plus-structured measurements while also pinning full JSON-RPC response bytes; direct `tools/call` and both `tools/list` profiles have dedicated in-process benchmarks.
 - Deterministic wire/counter regression budgets are hard local gates, while startup, latency, RSS/working-set, and CPU budgets remain soft review warnings; full CI benchmark comparison stays deferred to BL-247 and BL-248.
@@ -53,7 +54,7 @@ The format follows the spirit of [Keep a Changelog](https://keepachangelog.com/)
 
 ### Added
 
-- Sprint 3.45d adds the development-only `cmd/benchmark` STDIO runner, Win32 and Linux procfs process metrics, ten machine-readable reference workflows, result schema `flashgate-benchmark/v1`, a Windows quick baseline, local budget evaluation, and PowerShell/Bash launch scripts.
+- Sprint 3.45d adds the development-only `cmd/benchmark` STDIO runner, Win32 and Linux procfs process metrics, ten machine-readable reference workflows, result schema `flashgate-benchmark/v1`, local budget evaluation, and clean-only PowerShell/Bash baseline launch scripts. Platform baselines follow in a separate commit after Windows and native Linux runs on the same clean implementation commit.
 - Sprint 3.45a adds explicit `TextContent` and `CallToolResult` protocol DTOs, a strict project-local decoder with legacy unwrapped negative fixtures, full success/error wire tests, and reproducible tool-result serialization benchmarks.
 - A dated benchmark baseline records historical, text-only, and text-plus-structured payload/runtime/allocation costs without CI budgets.
 
