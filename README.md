@@ -13,9 +13,9 @@ It exposes secure filesystem operations to MCP-compatible clients through JSON-R
 
 ## Status
 
-The project currently implements the core MCP server loop, JSON-RPC routing and request validation, tool discovery, tool execution, MCP-conformant `CallToolResult` wrapping, filesystem abstraction, root-confined path handling, read-only tool gating, tests, and documentation.
+The project currently implements the core MCP server loop, JSON-RPC routing and request validation, tool discovery, tool execution, MCP-conformant `CallToolResult` wrapping, filesystem abstraction, root-confined path handling, read-only tool gating, reproducible resource/latency/payload benchmarks, tests, and documentation.
 
-The current implemented scope is filesystem operations. Search, process observation and management, allowlisted command execution, controlled system information, named roots, general capability profiles, and the Operations/Job Manager are accepted target architecture and remain planned work.
+The current implemented scope is filesystem operations. Version 1.0 plans bounded search, process observation/management, typed allowlisted command execution, controlled system information, named roots, safe-default capability profiles, the Operations/Job Manager, payload-efficient large-result handling, and optional local system-service deployment. These remain planned work.
 
 Implemented tools:
 
@@ -44,26 +44,41 @@ move_path
 - No external MCP framework dependency
 - Measurable CPU, RAM, startup, latency, response-size, and token efficiency
 - Local deterministic operations instead of transferring file content through the model
+- Payload-heavy content transferred once with bounded result/resource handling
+- Safe read-only profile as the Version 1.0 default when no higher-risk profile is selected
+- Separate caller authorization and effective service execution identity
+- No interpreter runtime for normal Windows/Linux operation
 
 ## FlashGate Security Gate
 
 “Gate” means a server-enforced boundary: policies, capabilities, roots, limits, path and process validation, redaction, and audit events control access below the MCP adapter. Tool annotations and tool visibility are not authorization.
 
-The current implementation enforces one configured root, read-only registration, path policies, hard limits, and redacted diagnostics. The target architecture plans multiple named roots and capability-based profiles while retaining server-side checks as authoritative. Dangerous capabilities remain disabled by default.
+The current implementation enforces one configured root, optional read-only registration, path policies, hard limits, and redacted diagnostics. The Version 1.0 target adds multiple named roots and capability-based profiles while retaining server-side checks as authoritative. With valid roots but no explicit profile, the target default is safe read-only; write, process, and command capabilities require explicit activation.
 
 ## Target Domains and Runtime
 
 Accepted future domains are filesystem, search, process, execution, and system information. An optional shared Operations/Job Manager is planned for bounded long-running or managed work, cancellation, deadlines, progress, TTL, cleanup, and leak protection. Short synchronous work may remain directly in domain services; the manager is not currently implemented and does not own domain logic.
 
-FlashGate MCP remains one repository and one primary binary unless benchmarks and threat models demonstrate a concrete isolation, deployment, performance, maintenance, platform, or release benefit from splitting it.
+FlashGate MCP remains one repository and one primary native binary per platform unless benchmarks and threat models demonstrate a concrete benefit from splitting it. Version 1.0 keeps direct STDIO for non-admin users and adds optional Windows/Linux system-service roles through the same binary. The system service implements service-account roots; per-user workers are designed but deferred.
+
+Version 1.0 runtime roles:
+
+```text
+flashgate-mcp [no mode / --mode stdio]  direct MCP over STDIO
+flashgate-mcp --mode proxy              STDIO proxy to local service
+flashgate-mcp --mode auto               safe service discovery with fail-closed fallback
+flashgate-mcp --mode service            Windows SCM or Linux systemd host
+```
+
+The system service separates the authenticated caller from the effective OS execution backend. Version 1.0 uses a dedicated service-account backend for administratively granted roots. A later per-user worker backend is planned; in-process impersonation is excluded.
 
 ## Open-Source, Modules, and Protocol Extensions
 
 FlashGate MCP is developed as a general, vendor-neutral open-source project. The core must not require Voxtronic paths, internal systems, proprietary dependencies, organization secrets, or company-specific permissions.
 
-Public, community, vendor, organization-internal, and Voxtronic-specific FlashGate modules/providers may be considered later. No module/provider contract or runtime model is selected or implemented in Sprint 3.41, and future providers may not bypass central security controls.
+Public, community, vendor, organization-internal, and Voxtronic-specific FlashGate modules/providers are post-Version-1.0 work. No module/provider contract or runtime model is part of the initial stable release, and future providers may not bypass central security or execution-identity controls.
 
-MCP protocol extensions are separate negotiated wire-protocol features. The implemented protocol remains MCP `2025-11-25`; later features such as `io.modelcontextprotocol/tasks` inform compatibility planning but are not implemented. Deprecated MCP Roots is not the basis of FlashGate named roots.
+MCP protocol extensions are separate negotiated wire-protocol features. The implemented protocol remains MCP `2025-11-25`. The 2026 stateless-core release candidate and final Tasks Extension inform Version 1.0 adapter planning but are not advertised until implemented and tested. Deprecated MCP Roots is not the basis of FlashGate named roots.
 
 ## Protocol and Transport
 
@@ -79,9 +94,9 @@ tools/list
 tools/call
 ```
 
-Filesystem operations are exposed as MCP tools and invoked through `tools/call`. Every successful call is wrapped centrally as MCP `CallToolResult`: `content` contains exactly one text block with compact JSON, while `structuredContent` contains the same domain object. This applies to all eight tools, including the `read_file` domain field named `content`; only the outer MCP `content` is an array.
+Filesystem operations are exposed as MCP tools and invoked through `tools/call`. Every currently implemented successful filesystem call is wrapped centrally as MCP `CallToolResult`: `content` contains one text block with compact JSON and `structuredContent` contains the same domain object. This is the present eight-tool contract. Version 1.0 will retain compact parity only for small metadata where justified; payload-heavy file, binary, search, and process content will be transmitted once with separate metadata or an opaque result/resource handle.
 
-Runtime `outputSchema` is not exposed yet. The static catalog `resultSchema` values document domain results and are the basis for the next separate Sprint 3.45 gate. The current safe JSON-RPC tool-error contract also remains unchanged pending BL-203.
+Runtime `outputSchema` is exposed for all eight tools and remains deeply equal to the catalog `resultSchema` values. These schemas describe successful `structuredContent`; the current safe JSON-RPC tool-error contract remains unchanged pending BL-203.
 
 JSON-RPC request envelopes are validated before dispatch. Unsupported batch requests, invalid protocol versions, missing or invalid methods, invalid IDs, and malformed method params are rejected with generic JSON-RPC errors. Parse errors and invalid requests without a valid request ID serialize `id:null`. Notifications do not receive responses; `notifications/initialized` is accepted as a no-op, and other notifications are not executed.
 
@@ -185,7 +200,7 @@ docs/mcp-tool-catalog.json
 
 Preparation for a later, separately approved Codex read-only activation is documented in [docs/codex-read-only-activation.md](docs/codex-read-only-activation.md). Sprint 3.44 does not modify Codex configuration or register FlashGate as an MCP server.
 
-The catalog contains tool names, descriptions, input schemas, domain `resultSchema` values, the central `CallToolResult` envelope description, and common error behavior. Its result schemas are not yet advertised as runtime `outputSchema`.
+The catalog contains tool names, descriptions, input schemas, domain `resultSchema` values, the central `CallToolResult` envelope description, and common error behavior. Runtime output schemas are exposed for the current tools. Version 1.0 also adds profile-specific catalog/instruction budgets, deterministic ordering, and catalog fingerprints.
 
 ## Project Planning
 
@@ -208,7 +223,14 @@ CHANGELOG.md
 Architecture and security references:
 
 - [Architecture](docs/architecture.md)
+- [Version 1.0 scope and release boundary](docs/version-1-scope-and-release-boundary.md)
+- [Efficiency improvement plan](docs/efficiency-improvement-plan.md)
+- [Execution identity backends](docs/execution-identity-backends.md)
+- [Native runtime and service plan](docs/native-multi-mode-runtime-and-service-plan.md)
+- [Comparative MCP review](docs/comparative-mcp-review-2026-07-17.md)
 - [Security model](docs/security.md)
+- [Protocol and local transport](docs/protocol.md)
+- [Version 1.0 product and technical specification](docs/specification.md)
 - [Architecture decisions](docs/adr/)
 - [Authoritative backlog](BACKLOG.md)
 - [High-level roadmap](docs/roadmap.md)
@@ -230,6 +252,18 @@ internal/
   version/              Build and release metadata
 
 docs/
+  architecture.md       Current and Version 1.0 target architecture
+  version-1-scope-and-release-boundary.md
+                        Version 1.0 versus post-Version-1.0 scope
+  efficiency-improvement-plan.md
+                        Payload, token, RAM, CPU, and native-adapter plan
+  execution-identity-backends.md
+                        Service-account and future user-worker architecture
+  native-multi-mode-runtime-and-service-plan.md
+                        STDIO/proxy/auto/system-service plan
+  protocol.md           MCP and local IPC protocol architecture
+  specification.md      Consolidated Version 1.0 requirements
+  coding-style.md       Go, native adapter, lifecycle, and payload rules
   mcp-tool-catalog.json Machine-readable MCP tool catalog
   tool-conventions.md   Tool implementation and interface conventions
   tools.md              Human-readable MCP tool reference
@@ -340,6 +374,37 @@ bash scripts/smoke-startup-negative.sh
 The negative smoke test verifies malformed JSON, unknown methods, invalid `tools/call` params, and notification no-response behavior.
 
 The smoke scripts create per-run JSONL request and response files under `build/` and remove them before exit. Script status output goes to the shell or CI log; the server process still writes only JSON-RPC protocol data to its redirected stdout stream.
+
+## Resource, Latency, and Payload Benchmarks
+
+Sprint 3.45d adds a versioned local benchmark system for process startup, end-to-end workflow latency, idle and peak working set, process CPU time, Go allocations, request/result/response sizes, filesystem counters, `tools/list` size, MCP call counts, and a coarse byte-based token orientation.
+
+Run the standard Windows benchmark after normal validation:
+
+```powershell
+& ".\scripts\benchmark.ps1"
+```
+
+Use the 10-repetition quick mode during development:
+
+```powershell
+& ".\scripts\benchmark.ps1" -Quick
+```
+
+On Linux:
+
+```bash
+bash scripts/benchmark.sh
+bash scripts/benchmark.sh --quick
+```
+
+The standard diagnostic mode records one `first_process_start` and 30 `subsequent_process_start` samples. Quick mode records one first and 10 subsequent samples. The first label means the first process started by that benchmark command; it does not claim an enforced OS cold cache.
+
+Detailed counter semantics, platform behavior, reference workflows, result schema, baseline, and hard-versus-soft budgets are documented in [`benchmarks/README.md`](benchmarks/README.md). The approximation `approx_tokens_bytes4 = ceil(UTF-8 bytes / 4)` is not model-specific and is not suitable for billing.
+
+Versioned baselines are recorded only from clean isolated checkouts of the same implementation commit using the documented two-phase prebuilt workflow. Validation and builds finish before a minimum 180-second quiet period, one authoritative three-block host preflight, direct measurement with prepared binaries, an intermediate gate, and a final host gate. Windows work remains below `C:\Voxtronic\Codex\Temp\Benchmarks`; native Linux work remains under `/home`; synchronized and Windows-mounted Linux paths are prohibited until post-gate archival. The legacy `-RecordBaseline` and `--record-baseline` wrapper flags fail closed and cannot create baselines. Ordinary local runs may use a dirty tree and record that provenance explicitly.
+
+`cmd/benchmark` is development-only. Diagnostic wrappers build it locally; authoritative runs invoke a separately prepared binary. It is not included in release artifacts.
 
 ## Release Builds
 
@@ -525,7 +590,7 @@ When `MCP_READ_ONLY=true`, only `list_directory`, `read_file`, and `get_path_inf
 
 Planned work is maintained authoritatively in [BACKLOG.md](BACKLOG.md). [docs/roadmap.md](docs/roadmap.md) contains only the high-level sequence.
 
-The backlog covers filesystem tools, search tools, process tools, command execution, system information, security and capability controls, client compatibility, CI, release automation, and documentation.
+The backlog covers Version 1.0 filesystem, search, process, typed command, system, security, payload-efficiency, hybrid identity, service, CI, supply-chain, release, and documentation work. Tasks marked `Later` are accepted post-Version-1.0 work and do not delay the initial stable release.
 
 ## License
 

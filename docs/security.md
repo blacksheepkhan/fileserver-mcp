@@ -253,108 +253,308 @@ Startup preflight completes before any tool Registry, Router or MCP server is cr
 
 ## Future Security Work
 
-Planned future work:
+Version 1.0 security work includes:
 
-- larger-file streaming strategy
-- search tool limits and exclude model
-- deeper cross-platform testing
+- named roots and safe read-only default profile;
+- server-side capability enforcement and negative tests;
+- payload-class and large-result security;
+- Operations/Job Manager quotas and identity-bound state;
+- typed command policy and platform isolation;
+- local multi-client service threat model;
+- hybrid execution-identity backend design;
+- Variant A service-account root implementation;
+- per-principal fairness and resource limits;
+- audit lifecycle and end-to-end correlation;
+- supply-chain and release evidence.
+
+Post-Version-1.0 security work includes the Variant B user-worker implementation, user-scoped persistent hosts, conditional read cache semantics, optional accelerators, and any external provider ecosystem.
 
 ## Accepted Target Security Architecture
 
-This section records accepted target controls. Except where the current-state sections above say otherwise, these controls are planned and are not implemented in Sprint 3.41.
+Except where the current-state sections above state otherwise, the controls below are planned and are not implemented yet.
 
 ### Gate as a server-enforced boundary
 
-The “Gate” in FlashGate means a server-enforced control boundary. Tool visibility, client claims, and MCP annotations are not authorization. Every operation must pass the applicable server-side capabilities, profile, root policy, path or process policy, limits, redaction, audit, and platform checks.
+The “Gate” is the authoritative server-side boundary. Tool visibility, descriptions, annotations, profile names, proxy payload claims, and extension negotiation are not authorization.
 
-FlashGate modules/providers cannot bypass this boundary. Public, community, vendor, organization-internal, and Voxtronic-specific providers use the same central controls as the core. MCP protocol-extension negotiation is separate and does not grant authorization.
+Every operation passes:
 
-### Capability enforcement and tool profiles
+- authenticated caller/principal resolution;
+- profile and functional capability checks;
+- root policy and execution-backend selection;
+- path/process/command/system policy;
+- global, domain, and principal resource limits;
+- redaction and audit/trace handling;
+- platform-adapter validation.
 
-Planned capabilities include:
+External providers, when later implemented, cannot bypass these controls.
+
+### Safe default profiles and capability enforcement
+
+Version 1.0 target behavior:
 
 ```text
-filesystem.read
-filesystem.write
-search.execute
-process.observe
-process.manage
-process.control.external
-command.execute
-system.read
+no valid root                    -> fail closed
+valid root, no explicit profile  -> safe read-only profile
+higher-risk profile              -> explicit validated activation
 ```
 
-Profiles combine functional capabilities and policy and determine tool registration. Example profile names include `safe-read`, `filesystem-write`, and `admin`. `high-risk`, `destructive`, and `interactive` are risk classifications or additional policy conditions, not universal capabilities. The current `MCP_READ_ONLY` registration behavior is the first restricted-profile case, not the final profile model. Final names remain open for Sprint 3.50. Authorization is checked again during execution so direct calls cannot bypass registration rules.
+Tool registration reflects effective capability but execution checks remain authoritative. Direct calls cannot bypass hidden/unregistered tools.
 
-### Per-root policies
+MCP annotations are accurate hints only and never grant permission.
 
-The accepted named-root target is based on authoritative FlashGate server configuration and explicit root IDs plus relative paths. Each root may define read/write permission, file and result size, allowed file types, capability mapping, symlink/reparse rules, and process working-directory permission. Deprecated MCP Roots is not an architectural dependency; optional legacy compatibility may be evaluated only for a supported client and never overrides server policy.
+### Per-root policies and execution backend
 
-### Operations and Job Manager controls
+Named roots use authoritative FlashGate configuration and root IDs plus relative paths. Each root may define:
 
-The planned Operations/Job Manager is an optional runtime service for long-running or managed work. Short synchronous work may run directly in domain services. The generic manager does not own domain logic or MCP tool types. Managed operations use opaque handles, bounded queues, global and per-domain concurrency, maximum runtime, bounded results and temporary data, TTL cleanup, controlled shutdown, and job-leak protection.
+- read/write permission;
+- file/result/scan/temp limits;
+- allowed file types;
+- symlink/reparse policy;
+- capability mapping;
+- process working-directory permission;
+- service execution backend.
 
-The server owns deadlines. Workers receive cancellable contexts and check cancellation regularly; a watchdog enforces expiry. External workers are terminated if required. Temporary resources are removed or marked incomplete, status becomes `timed_out`, and errors/results remain bounded. A worker is never trusted as the only deadline enforcer.
+Version 1.0 system-service roots support `service-account`. A reserved `user-worker` root must fail closed until the post-Version-1.0 backend exists. Tool input cannot choose the backend.
+
+Deprecated MCP Roots is never authoritative and is post-Version-1.0 compatibility work only.
+
+### Operations, handles, resources, quotas, and fairness
+
+Operations/jobs use opaque non-guessable handles. All stateful objects are bound to:
+
+```text
+principal + profile + root + execution backend + service generation + expiry
+```
+
+This applies to:
+
+- operation/job handles;
+- managed process handles;
+- process/search cursors;
+- large-result/resource handles;
+- temporary data;
+- cancellation rights;
+- authorization-sensitive caches.
+
+Resource control combines:
+
+- global limits;
+- per-domain limits;
+- per-principal concurrency and queue limits;
+- fair scheduling and starvation prevention;
+- stored-result/temp-data/process/output limits;
+- deterministic overload behavior;
+- TTL cleanup and leak detection;
+- slow-reader/backpressure handling.
+
+A service restart changes the generation and invalidates stale state.
+
+### Payload and resource boundary
+
+Payload-heavy content must not be duplicated between MCP result fields or IPC layers.
+
+Large text, binary, media, search, tree, and process output uses bounded pages, streams, or identity-bound resource handles. Resource URIs are opaque and never contain raw host paths.
+
+The server enforces:
+
+- MIME/content-class validation;
+- raw and encoded byte limits;
+- TTL and owner checks;
+- safe expiry/restart errors;
+- no cross-principal resource access;
+- bounded inline compatibility fallback;
+- no unrestricted base64 output.
 
 ### Managed process identity and control
 
-Server-started processes receive opaque process handles. Handles, not PIDs alone, identify managed instances for status, output, wait, and stop operations. PID reuse must not cause a request to control the wrong process.
+Server-started processes receive opaque handles. PIDs are diagnostic only and cannot be the sole authority because PID reuse may target the wrong process.
 
-Stopping defaults to server-managed processes. Controlling an external PID requires a distinct functional capability such as `process.control.external` plus a high-risk policy classification and is outside standard profiles. Process listings, details, command lines, and environment information must be filtered and redacted.
+Default control is limited to server-managed processes. External PID control is post-Version 1.0 and requires a separate high-risk capability and threat model.
 
-### Command execution boundary
+stdout and stderr are separately bounded. Command lines, environments, and output are minimized and redacted.
 
-Planned command execution uses configured executable IDs resolved to server-approved absolute program paths. Arguments are separate arrays; the standard interface has no free shell string. Working directories must be inside permitted roots. Environment variables use an allowlist or explicit propagation rules. stdout and stderr remain separate and bounded. Runtime, output, and process concurrency are limited.
+### Typed command execution boundary
 
-A future synchronous `run_command` will wrap the same Managed Process Engine. A second execution engine is prohibited. Interactive shells remain disabled and require distinct interactive/high-risk policy decisions. Platform-specific Windows and Linux isolation must preserve the same policy outcome and least-privilege intent.
+Version 1.0 command execution uses server-defined command IDs. A definition fixes or constrains:
 
-### Secret redaction and audit events
+- absolute executable path and optional binary identity;
+- fixed subcommand;
+- allowed flags and typed values;
+- path arguments bound to named roots;
+- working directory;
+- environment;
+- timeout;
+- stdout/stderr limits;
+- concurrency;
+- network policy;
+- OS isolation.
 
-Secret redaction applies to client-visible results, diagnostics, process command lines, environment data, audit fields, and module/provider output where applicable. Redaction complements data minimization; it does not make unrestricted collection acceptable.
+The server constructs argv. Standard profiles do not accept a free shell string, response files, arbitrary config overrides, unapproved hooks/plugins/loaders, or uncontrolled environment inheritance.
 
-A planned audit event model will record bounded, structured security-relevant facts such as effective capability, root ID, operation type, policy decision, handle, duration, outcome, and redacted failure classification. Audit data must not include raw secrets, unrestricted file content, full environments, or unnecessary absolute host paths.
+Interactive shell and process input remain post-Version 1.0.
 
-### FlashGate module/provider and MCP extension boundaries
+### Native OS and interpreter boundary
 
-All FlashGate modules/providers must use shared:
+Normal Version 1.0 runtime prefers:
 
-- capabilities
-- root policies
-- limits
-- path validation
-- process policies
-- secret redaction
-- audit events
-- platform adapters
+1. Go standard library;
+2. platform-specific Go adapter;
+3. direct OS API or stable OS virtual filesystem;
+4. allowlisted native OS program without a shell only after benchmark/security evidence.
 
-A provider's vendor, deployment location, or official/community label grants no implicit trust. The later provider-runtime decision must include isolation, update, dependency, and supply-chain analysis. MCP protocol extensions use their own negotiated wire contract, but negotiation remains distinct from capability authorization.
+Python, PHP, Node.js, Java, PowerShell, Bash, or another interpreter is not a required runtime layer for the FlashGate core/service. Scripts may remain development, installation, smoke, or administrator tooling.
 
-### MCP version and Tasks compatibility
+### Hybrid service execution identity
 
-The implemented protocol remains MCP `2025-11-25`. No later MCP feature is supported in Sprint 3.41. The MCP adapter owns protocol and extension negotiation. If eligible internal jobs are later exposed through `io.modelcontextprotocol/tasks`, each Task request must be bound to the authorized caller and internal handle, and internal states/results must be mapped and redacted deliberately. Custom operation tools are not the accepted primary contract while this compatibility decision remains open.
+A multi-client system service is a local privilege boundary. Every request has:
+
+- an authenticated caller principal;
+- an effective execution backend.
+
+Version 1.0 implements Variant A service-account roots:
+
+- dedicated restricted Windows/Linux service identity;
+- explicit ACLs for configured service roots;
+- no LocalSystem/root convenience default;
+- caller-specific FlashGate authorization and quotas;
+- OS operation under the service account;
+- audit records include caller and effective backend identity.
+
+Version 1.0 defines interfaces and the threat model for Variant B user workers, but the worker is post-Version 1.0.
+
+Variant C shared-process impersonation is prohibited. FlashGate does not switch caller credentials inside the shared Go service process.
+
+The service derives caller identity from Named Pipe or Unix socket peer information. Proxy-supplied identity claims are never authoritative.
+
+### Local IPC and auto-mode boundary
+
+Windows uses a local Named Pipe with restrictive ACLs. Linux uses a local Unix Domain Socket with restrictive ownership/mode and OS peer credentials.
+
+The IPC contract includes framing, size limits, compatibility handshake, correlation, cancellation, overload, resource handles, disconnect behavior, and service generation.
+
+`auto` may fall back to direct STDIO only when no managed endpoint is present or configured. It fails closed after:
+
+- access denial;
+- caller authorization failure;
+- policy/root/profile denial;
+- protocol incompatibility;
+- required managed endpoint failure.
+
+It never installs, elevates, or changes service state.
+
+No remote TCP/HTTP listener is included.
+
+### Audit lifecycle and trace correlation
+
+Version 1.0 audit defines bounded structured events with:
+
+- immutable event and correlation IDs;
+- caller principal/policy mapping;
+- effective profile, capability, root, and execution backend;
+- operation/tool and decision;
+- result category, counters, and duration;
+- proxy/service/backend/job/process correlation.
+
+It also defines:
+
+- rotation and retention;
+- maximum queue/buffer/disk use;
+- slow/full sink and disk-full behavior;
+- log-injection protection;
+- redaction before output;
+- shutdown flush/drop policy;
+- no raw secrets, credentials, full file contents, unrestricted environments, or unnecessary absolute paths.
+
+A heavy telemetry dependency is not required. Optional standard trace-context propagation may build on the compact internal correlation model.
+
+### MCP version and extension compatibility
+
+The implemented revision remains MCP `2025-11-25` until another revision is finalized, implemented, and tested.
+
+Version 1.0 protocol security includes:
+
+- explicit supported-revision matrix;
+- adapter-only version/extension logic;
+- stateless-core and list-cache/TTL review for the 2026 line;
+- final Tasks Extension mapping without mixing the 2025 experimental lifecycle;
+- JSON Schema 2020-12 validation;
+- capability downgrade/mismatch tests;
+- no authorization implication from extension support;
+- no architectural dependency on deprecated Roots, Sampling, or Logging.
+
+### Release and supply-chain security
+
+Version 1.0 requires:
+
+- pinned/validated workflow strategy;
+- checksums;
+- SBOM and dependency inventory;
+- build provenance;
+- Windows/Linux signing plan and configured signing where available;
+- reproducible-build comparison or documented limitations;
+- artifact identity/version verification;
+- atomic update/rollback guidance;
+- no silent automatic update;
+- public security policy and supported-version statement.
 
 ## Threat Model Workstreams
 
-Separate threat models are required before the corresponding target domains become generally available:
-
 | Workstream | Minimum concerns |
 |---|---|
-| Filesystem | traversal, symlink/reparse escapes, races, overwrite/delete semantics, resource exhaustion, data disclosure |
-| Search | unbounded recursion, scanned-byte cost, binary/encoding behavior, ignored sensitive paths, result leakage |
-| Processes | PID reuse, lifecycle races, command-line/environment disclosure, external PID control, orphan cleanup |
-| Command execution | executable substitution, argument and environment injection, working-directory escape, output/resource exhaustion, platform isolation |
-| FlashGate modules/providers | policy bypass, capability inflation, dependency/supply-chain risk, metadata trust, in-process versus IPC isolation |
-| MCP protocol extensions | negotiation downgrade/mismatch, capability confusion, version compatibility, authorization separation |
+| Filesystem | traversal, symlink/reparse escape, TOCTOU, overwrite/delete semantics, MIME/binary transfer, result handles, exhaustion, disclosure |
+| Search | recursion/regex cost, scanned bytes, encoding, ignores, context/result leakage, cursor ownership |
+| Operations/jobs | handle guessing, cross-principal access, fairness, queues, TTL, cleanup, restart, slow readers |
+| Processes | PID reuse, lifecycle races, command/environment disclosure, output cursors, orphan cleanup, child limits |
+| Typed commands | executable substitution, argument/config/hook/plugin injection, env, roots, output, network, OS isolation |
+| System service | endpoint spoofing, peer identity, service-account ACLs, policy/OS permission mismatch, privilege escalation, auto fallback |
+| Future user workers | token/UID/session acquisition, groups/env, broker IPC, worker reuse, cross-user state, resource/crash isolation |
+| Payload/resources | amplification, base64 cost, host-path URI leak, owner/TTL checks, stale generation, compatibility fallback |
+| MCP versions/extensions | downgrade/mismatch, stateless routing, cache invalidation, Tasks lifecycle, deprecated capability confusion |
+| Supply chain | dependency/workflow compromise, artifact substitution, unsigned updates, provenance, rollback |
+| Future providers | policy bypass, capability inflation, dependency/update risk, in-process versus IPC isolation |
 
-Stateful components additionally require race-detector coverage, restart/shutdown analysis, handle lifecycle tests, negative capability tests, and cleanup verification.
+Stateful components require race-detector coverage, restart/shutdown analysis, negative capability tests, quota/fairness tests, and cleanup verification.
+
+## Version 1.0 Security Acceptance
+
+Version 1.0 cannot release until:
+
+- safe read-only is the default profile;
+- all higher-risk capabilities require explicit activation;
+- heavy payloads are bounded and not duplicated;
+- service-account roots and endpoint ACLs pass Windows/Linux tests;
+- caller and effective execution identity are separate and auditable;
+- unsupported user-worker configuration fails closed;
+- no in-process impersonation path exists;
+- handles/caches/resources/cancellation are execution-context bound;
+- per-principal quotas and fairness pass;
+- typed command injection and environment tests pass;
+- audit lifecycle and disk-full behavior are defined/tested;
+- supported MCP versions/extensions are explicit;
+- release supply-chain evidence is complete.
 
 ## Deferred Security Decisions
 
-- final profile and capability configuration schema
-- exact audit event schema and retention
-- CPU/RAM isolation mechanism per platform
-- FlashGate module/provider runtime and isolation model
-- MCP protocol-extension compatibility beyond `2025-11-25`
-- external PID control design
-- interactive input and shell design
-- privacy-sensitive network-information scope
+Post-Version-1.0 decisions include:
+
+- Variant B user-worker implementation details;
+- user-scoped persistent hosting;
+- conditional read/cache authorization semantics;
+- external PID control;
+- interactive process input/shell;
+- privacy-sensitive network information;
+- provider runtime and isolation;
+- optional accelerators and indexes.
+
+Remote access or a product/binary split requires a separate ADR and threat model.
+
+## Related Documents
+
+- [Architecture](architecture.md)
+- [Execution identity backends](execution-identity-backends.md)
+- [Native runtime and service plan](native-multi-mode-runtime-and-service-plan.md)
+- [Efficiency improvement plan](efficiency-improvement-plan.md)
+- [Version 1.0 scope](version-1-scope-and-release-boundary.md)
+- [ADR-0014](adr/0014-native-multi-mode-runtime-and-local-service-deployment.md)
+- [ADR-0015](adr/0015-hybrid-service-execution-identity.md)

@@ -1,0 +1,1256 @@
+{
+  "schema_version": "flashgate-benchmark/v1",
+  "benchmark_suite_version": "flashgate-benchmark-suite/v1",
+  "workflow_catalog_version": "flashgate-benchmark-workflows/v1",
+  "corpus_version": "flashgate-benchmark-corpus/v1",
+  "project": "flashgate-mcp",
+  "commit": "cfd211fa81cc48ee1dc463966718442f2ab5223c",
+  "working_tree_dirty": false,
+  "generated_at_utc": "2026-07-18T13:53:09.1942484Z",
+  "go_version": "go1.26.4",
+  "os": "windows",
+  "architecture": "amd64",
+  "runtime_mode": "direct_stdio",
+  "transport": "stdio",
+  "execution_backend": "current_process",
+  "profile": "read_only",
+  "parallelism": 1,
+  "repetitions": 30,
+  "start_measurements": {
+    "first_process_start": {
+      "repetitions": 1,
+      "duration_ns": {
+        "samples": 1,
+        "min": 916872300,
+        "p50": 916872300,
+        "p95": 916872300,
+        "max": 916872300
+      },
+      "request_bytes": {
+        "samples": 1,
+        "min": 221,
+        "p50": 221,
+        "p95": 221,
+        "max": 221
+      },
+      "response_bytes": {
+        "samples": 1,
+        "min": 151,
+        "p50": 151,
+        "p95": 151,
+        "max": 151
+      },
+      "result_bytes": {
+        "samples": 1,
+        "min": 116,
+        "p50": 116,
+        "p95": 116,
+        "max": 116
+      },
+      "resources": {
+        "status": "supported",
+        "idle_working_set_bytes": {
+          "samples": 1,
+          "min": 6967296,
+          "p50": 6967296,
+          "p95": 6967296,
+          "max": 6967296
+        },
+        "peak_working_set_bytes": {
+          "samples": 1,
+          "min": 6967296,
+          "p50": 6967296,
+          "p95": 6967296,
+          "max": 6967296
+        },
+        "user_cpu_ns": {
+          "samples": 1,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "system_cpu_ns": {
+          "samples": 1,
+          "min": 15625000,
+          "p50": 15625000,
+          "p95": 15625000,
+          "max": 15625000
+        }
+      },
+      "exit_statuses": {
+        "0": 1
+      },
+      "stderr_warnings": [],
+      "stderr_warning_count": 0
+    },
+    "subsequent_process_start": {
+      "repetitions": 30,
+      "duration_ns": {
+        "samples": 30,
+        "min": 16207100,
+        "p50": 17954700,
+        "p95": 22415400,
+        "max": 22601700
+      },
+      "request_bytes": {
+        "samples": 30,
+        "min": 221,
+        "p50": 221,
+        "p95": 221,
+        "max": 221
+      },
+      "response_bytes": {
+        "samples": 30,
+        "min": 151,
+        "p50": 151,
+        "p95": 151,
+        "max": 151
+      },
+      "result_bytes": {
+        "samples": 30,
+        "min": 116,
+        "p50": 116,
+        "p95": 116,
+        "max": 116
+      },
+      "resources": {
+        "status": "supported",
+        "idle_working_set_bytes": {
+          "samples": 30,
+          "min": 6586368,
+          "p50": 6610944,
+          "p95": 6725632,
+          "max": 6791168
+        },
+        "peak_working_set_bytes": {
+          "samples": 30,
+          "min": 6586368,
+          "p50": 6610944,
+          "p95": 6725632,
+          "max": 6791168
+        },
+        "user_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 0,
+          "p95": 15625000,
+          "max": 31250000
+        },
+        "system_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 0,
+          "p95": 15625000,
+          "max": 15625000
+        }
+      },
+      "exit_statuses": {
+        "0": 30
+      },
+      "stderr_warnings": [],
+      "stderr_warning_count": 0
+    }
+  },
+  "resource_measurements": {
+    "status": "supported",
+    "idle_working_set_bytes": {
+      "samples": 333,
+      "min": 6586368,
+      "p50": 6635520,
+      "p95": 6754304,
+      "max": 6967296
+    },
+    "peak_working_set_bytes": {
+      "samples": 333,
+      "min": 6586368,
+      "p50": 6762496,
+      "p95": 9318400,
+      "max": 9437184
+    },
+    "user_cpu_ns": {
+      "samples": 333,
+      "min": 0,
+      "p50": 0,
+      "p95": 31250000,
+      "max": 109375000
+    },
+    "system_cpu_ns": {
+      "samples": 333,
+      "min": 0,
+      "p50": 15625000,
+      "p95": 234375000,
+      "max": 296875000
+    }
+  },
+  "tools_list_measurements": [
+    {
+      "profile": "read_only",
+      "tool_count": 3,
+      "schema_count": 3,
+      "request_bytes": 59,
+      "response_bytes": 2134,
+      "result_bytes": 2099,
+      "approx_tokens_bytes4": 534
+    },
+    {
+      "profile": "default",
+      "tool_count": 8,
+      "schema_count": 8,
+      "request_bytes": 59,
+      "response_bytes": 5657,
+      "result_bytes": 5622,
+      "approx_tokens_bytes4": 1415
+    }
+  ],
+  "workflow_measurements": [
+    {
+      "name": "initialize",
+      "repetitions": 30,
+      "calls": 0,
+      "request_bytes": {
+        "samples": 30,
+        "min": 221,
+        "p50": 221,
+        "p95": 221,
+        "max": 221
+      },
+      "response_bytes": {
+        "samples": 30,
+        "min": 151,
+        "p50": 151,
+        "p95": 151,
+        "max": 151
+      },
+      "result_bytes": {
+        "samples": 30,
+        "min": 116,
+        "p50": 116,
+        "p95": 116,
+        "max": 116
+      },
+      "duration_ns": {
+        "samples": 30,
+        "min": 16315100,
+        "p50": 18517600,
+        "p95": 20693300,
+        "max": 20731100
+      },
+      "read_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "written_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "scanned_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "entries": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "approx_tokens_bytes4": {
+        "samples": 30,
+        "min": 38,
+        "p50": 38,
+        "p95": 38,
+        "max": 38
+      },
+      "resources": {
+        "status": "supported",
+        "idle_working_set_bytes": {
+          "samples": 30,
+          "min": 6590464,
+          "p50": 6619136,
+          "p95": 6791168,
+          "max": 6795264
+        },
+        "peak_working_set_bytes": {
+          "samples": 30,
+          "min": 6590464,
+          "p50": 6619136,
+          "p95": 6791168,
+          "max": 6795264
+        },
+        "user_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 0,
+          "p95": 15625000,
+          "max": 15625000
+        },
+        "system_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 0,
+          "p95": 15625000,
+          "max": 15625000
+        }
+      },
+      "exit_statuses": {
+        "0": 30
+      },
+      "stderr_warnings": [],
+      "stderr_warning_count": 0
+    },
+    {
+      "name": "initialize_tools_list",
+      "repetitions": 30,
+      "calls": 0,
+      "request_bytes": {
+        "samples": 30,
+        "min": 280,
+        "p50": 280,
+        "p95": 280,
+        "max": 280
+      },
+      "response_bytes": {
+        "samples": 30,
+        "min": 2285,
+        "p50": 2285,
+        "p95": 2285,
+        "max": 2285
+      },
+      "result_bytes": {
+        "samples": 30,
+        "min": 2215,
+        "p50": 2215,
+        "p95": 2215,
+        "max": 2215
+      },
+      "duration_ns": {
+        "samples": 30,
+        "min": 18056200,
+        "p50": 19823900,
+        "p95": 22182000,
+        "max": 22351600
+      },
+      "read_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "written_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "scanned_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "entries": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "approx_tokens_bytes4": {
+        "samples": 30,
+        "min": 572,
+        "p50": 572,
+        "p95": 572,
+        "max": 572
+      },
+      "resources": {
+        "status": "supported",
+        "idle_working_set_bytes": {
+          "samples": 30,
+          "min": 6586368,
+          "p50": 6635520,
+          "p95": 6746112,
+          "max": 6770688
+        },
+        "peak_working_set_bytes": {
+          "samples": 30,
+          "min": 6684672,
+          "p50": 6733824,
+          "p95": 6868992,
+          "max": 6885376
+        },
+        "user_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 0,
+          "p95": 31250000,
+          "max": 31250000
+        },
+        "system_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 0,
+          "p95": 15625000,
+          "max": 31250000
+        }
+      },
+      "exit_statuses": {
+        "0": 30
+      },
+      "stderr_warnings": [],
+      "stderr_warning_count": 0
+    },
+    {
+      "name": "get_path_info_existing",
+      "repetitions": 30,
+      "calls": 1,
+      "request_bytes": {
+        "samples": 30,
+        "min": 338,
+        "p50": 338,
+        "p95": 338,
+        "max": 338
+      },
+      "response_bytes": {
+        "samples": 30,
+        "min": 426,
+        "p50": 426,
+        "p95": 426,
+        "max": 426
+      },
+      "result_bytes": {
+        "samples": 30,
+        "min": 356,
+        "p50": 356,
+        "p95": 356,
+        "max": 356
+      },
+      "duration_ns": {
+        "samples": 30,
+        "min": 17375500,
+        "p50": 19755000,
+        "p95": 22993600,
+        "max": 24200000
+      },
+      "read_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "written_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "scanned_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "entries": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "approx_tokens_bytes4": {
+        "samples": 30,
+        "min": 107,
+        "p50": 107,
+        "p95": 107,
+        "max": 107
+      },
+      "resources": {
+        "status": "supported",
+        "idle_working_set_bytes": {
+          "samples": 30,
+          "min": 6590464,
+          "p50": 6635520,
+          "p95": 6733824,
+          "max": 6782976
+        },
+        "peak_working_set_bytes": {
+          "samples": 30,
+          "min": 6647808,
+          "p50": 6692864,
+          "p95": 6791168,
+          "max": 6840320
+        },
+        "user_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 0,
+          "p95": 15625000,
+          "max": 15625000
+        },
+        "system_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 15625000,
+          "p95": 15625000,
+          "max": 15625000
+        }
+      },
+      "exit_statuses": {
+        "0": 30
+      },
+      "stderr_warnings": [],
+      "stderr_warning_count": 0
+    },
+    {
+      "name": "get_path_info_missing",
+      "repetitions": 30,
+      "calls": 1,
+      "request_bytes": {
+        "samples": 30,
+        "min": 337,
+        "p50": 337,
+        "p95": 337,
+        "max": 337
+      },
+      "response_bytes": {
+        "samples": 30,
+        "min": 326,
+        "p50": 326,
+        "p95": 326,
+        "max": 326
+      },
+      "result_bytes": {
+        "samples": 30,
+        "min": 256,
+        "p50": 256,
+        "p95": 256,
+        "max": 256
+      },
+      "duration_ns": {
+        "samples": 30,
+        "min": 17708300,
+        "p50": 19364900,
+        "p95": 22776900,
+        "max": 22778200
+      },
+      "read_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "written_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "scanned_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "entries": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "approx_tokens_bytes4": {
+        "samples": 30,
+        "min": 82,
+        "p50": 82,
+        "p95": 82,
+        "max": 82
+      },
+      "resources": {
+        "status": "supported",
+        "idle_working_set_bytes": {
+          "samples": 30,
+          "min": 6590464,
+          "p50": 6635520,
+          "p95": 6774784,
+          "max": 6774784
+        },
+        "peak_working_set_bytes": {
+          "samples": 30,
+          "min": 6647808,
+          "p50": 6692864,
+          "p95": 6832128,
+          "max": 6840320
+        },
+        "user_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 0,
+          "p95": 15625000,
+          "max": 15625000
+        },
+        "system_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 15625000,
+          "p95": 15625000,
+          "max": 15625000
+        }
+      },
+      "exit_statuses": {
+        "0": 30
+      },
+      "stderr_warnings": [],
+      "stderr_warning_count": 0
+    },
+    {
+      "name": "read_file_small",
+      "repetitions": 30,
+      "calls": 1,
+      "request_bytes": {
+        "samples": 30,
+        "min": 331,
+        "p50": 331,
+        "p95": 331,
+        "max": 331
+      },
+      "response_bytes": {
+        "samples": 30,
+        "min": 355,
+        "p50": 355,
+        "p95": 355,
+        "max": 355
+      },
+      "result_bytes": {
+        "samples": 30,
+        "min": 285,
+        "p50": 285,
+        "p95": 285,
+        "max": 285
+      },
+      "duration_ns": {
+        "samples": 30,
+        "min": 17126000,
+        "p50": 20035600,
+        "p95": 21825200,
+        "max": 22722100
+      },
+      "read_bytes": {
+        "samples": 30,
+        "min": 26,
+        "p50": 26,
+        "p95": 26,
+        "max": 26
+      },
+      "written_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "scanned_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "entries": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "approx_tokens_bytes4": {
+        "samples": 30,
+        "min": 89,
+        "p50": 89,
+        "p95": 89,
+        "max": 89
+      },
+      "resources": {
+        "status": "supported",
+        "idle_working_set_bytes": {
+          "samples": 30,
+          "min": 6590464,
+          "p50": 6627328,
+          "p95": 6762496,
+          "max": 6774784
+        },
+        "peak_working_set_bytes": {
+          "samples": 30,
+          "min": 6672384,
+          "p50": 6709248,
+          "p95": 6840320,
+          "max": 6852608
+        },
+        "user_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 0,
+          "p95": 15625000,
+          "max": 15625000
+        },
+        "system_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 15625000,
+          "p95": 15625000,
+          "max": 15625000
+        }
+      },
+      "exit_statuses": {
+        "0": 30
+      },
+      "stderr_warnings": [],
+      "stderr_warning_count": 0
+    },
+    {
+      "name": "read_file_64kib",
+      "repetitions": 30,
+      "calls": 1,
+      "request_bytes": {
+        "samples": 30,
+        "min": 336,
+        "p50": 336,
+        "p95": 336,
+        "max": 336
+      },
+      "response_bytes": {
+        "samples": 30,
+        "min": 131378,
+        "p50": 131378,
+        "p95": 131378,
+        "max": 131378
+      },
+      "result_bytes": {
+        "samples": 30,
+        "min": 131308,
+        "p50": 131308,
+        "p95": 131308,
+        "max": 131308
+      },
+      "duration_ns": {
+        "samples": 30,
+        "min": 22194400,
+        "p50": 25366300,
+        "p95": 27664300,
+        "max": 28320600
+      },
+      "read_bytes": {
+        "samples": 30,
+        "min": 65536,
+        "p50": 65536,
+        "p95": 65536,
+        "max": 65536
+      },
+      "written_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "scanned_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "entries": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "approx_tokens_bytes4": {
+        "samples": 30,
+        "min": 32845,
+        "p50": 32845,
+        "p95": 32845,
+        "max": 32845
+      },
+      "resources": {
+        "status": "supported",
+        "idle_working_set_bytes": {
+          "samples": 30,
+          "min": 6594560,
+          "p50": 6635520,
+          "p95": 6733824,
+          "max": 6770688
+        },
+        "peak_working_set_bytes": {
+          "samples": 30,
+          "min": 7471104,
+          "p50": 7524352,
+          "p95": 7659520,
+          "max": 7667712
+        },
+        "user_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 0,
+          "p95": 15625000,
+          "max": 15625000
+        },
+        "system_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 15625000,
+          "p95": 15625000,
+          "max": 31250000
+        }
+      },
+      "exit_statuses": {
+        "0": 30
+      },
+      "stderr_warnings": [],
+      "stderr_warning_count": 0
+    },
+    {
+      "name": "list_directory_small",
+      "repetitions": 30,
+      "calls": 1,
+      "request_bytes": {
+        "samples": 30,
+        "min": 336,
+        "p50": 336,
+        "p95": 336,
+        "max": 336
+      },
+      "response_bytes": {
+        "samples": 30,
+        "min": 538,
+        "p50": 538,
+        "p95": 538,
+        "max": 538
+      },
+      "result_bytes": {
+        "samples": 30,
+        "min": 468,
+        "p50": 468,
+        "p95": 468,
+        "max": 468
+      },
+      "duration_ns": {
+        "samples": 30,
+        "min": 20091000,
+        "p50": 22031600,
+        "p95": 24251400,
+        "max": 24675100
+      },
+      "read_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "written_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "scanned_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "entries": {
+        "samples": 30,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "max": 3
+      },
+      "approx_tokens_bytes4": {
+        "samples": 30,
+        "min": 135,
+        "p50": 135,
+        "p95": 135,
+        "max": 135
+      },
+      "resources": {
+        "status": "supported",
+        "idle_working_set_bytes": {
+          "samples": 30,
+          "min": 6590464,
+          "p50": 6635520,
+          "p95": 6725632,
+          "max": 6754304
+        },
+        "peak_working_set_bytes": {
+          "samples": 30,
+          "min": 6754304,
+          "p50": 6803456,
+          "p95": 6930432,
+          "max": 6946816
+        },
+        "user_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 0,
+          "p95": 15625000,
+          "max": 15625000
+        },
+        "system_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 0,
+          "p95": 15625000,
+          "max": 31250000
+        }
+      },
+      "exit_statuses": {
+        "0": 30
+      },
+      "stderr_warnings": [],
+      "stderr_warning_count": 0
+    },
+    {
+      "name": "list_directory_500_entries",
+      "repetitions": 30,
+      "calls": 1,
+      "request_bytes": {
+        "samples": 30,
+        "min": 336,
+        "p50": 336,
+        "p95": 336,
+        "max": 336
+      },
+      "response_bytes": {
+        "samples": 30,
+        "min": 53680,
+        "p50": 53680,
+        "p95": 53680,
+        "max": 53680
+      },
+      "result_bytes": {
+        "samples": 30,
+        "min": 53610,
+        "p50": 53610,
+        "p95": 53610,
+        "max": 53610
+      },
+      "duration_ns": {
+        "samples": 30,
+        "min": 261988900,
+        "p50": 280991400,
+        "p95": 306886800,
+        "max": 308851200
+      },
+      "read_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "written_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "scanned_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "entries": {
+        "samples": 30,
+        "min": 500,
+        "p50": 500,
+        "p95": 500,
+        "max": 500
+      },
+      "approx_tokens_bytes4": {
+        "samples": 30,
+        "min": 13420,
+        "p50": 13420,
+        "p95": 13420,
+        "max": 13420
+      },
+      "resources": {
+        "status": "supported",
+        "idle_working_set_bytes": {
+          "samples": 30,
+          "min": 6590464,
+          "p50": 6598656,
+          "p95": 6758400,
+          "max": 6758400
+        },
+        "peak_working_set_bytes": {
+          "samples": 30,
+          "min": 9183232,
+          "p50": 9330688,
+          "p95": 9428992,
+          "max": 9437184
+        },
+        "user_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 31250000,
+          "p95": 93750000,
+          "max": 109375000
+        },
+        "system_cpu_ns": {
+          "samples": 30,
+          "min": 171875000,
+          "p50": 234375000,
+          "p95": 281250000,
+          "max": 296875000
+        }
+      },
+      "exit_statuses": {
+        "0": 30
+      },
+      "stderr_warnings": [],
+      "stderr_warning_count": 0
+    },
+    {
+      "name": "multiple_path_checks",
+      "repetitions": 30,
+      "calls": 10,
+      "request_bytes": {
+        "samples": 30,
+        "min": 1513,
+        "p50": 1513,
+        "p95": 1513,
+        "max": 1513
+      },
+      "response_bytes": {
+        "samples": 30,
+        "min": 3123,
+        "p50": 3123,
+        "p95": 3123,
+        "max": 3123
+      },
+      "result_bytes": {
+        "samples": 30,
+        "min": 2736,
+        "p50": 2736,
+        "p95": 2736,
+        "max": 2736
+      },
+      "duration_ns": {
+        "samples": 30,
+        "min": 26372600,
+        "p50": 29809600,
+        "p95": 31648800,
+        "max": 32241000
+      },
+      "read_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "written_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "scanned_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "entries": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "approx_tokens_bytes4": {
+        "samples": 30,
+        "min": 781,
+        "p50": 781,
+        "p95": 781,
+        "max": 781
+      },
+      "resources": {
+        "status": "supported",
+        "idle_working_set_bytes": {
+          "samples": 30,
+          "min": 6590464,
+          "p50": 6598656,
+          "p95": 6746112,
+          "max": 6766592
+        },
+        "peak_working_set_bytes": {
+          "samples": 30,
+          "min": 6750208,
+          "p50": 6770688,
+          "p95": 6909952,
+          "max": 6930432
+        },
+        "user_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 0,
+          "p95": 15625000,
+          "max": 31250000
+        },
+        "system_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 15625000,
+          "p95": 31250000,
+          "max": 31250000
+        }
+      },
+      "exit_statuses": {
+        "0": 30
+      },
+      "stderr_warnings": [],
+      "stderr_warning_count": 0
+    },
+    {
+      "name": "multiple_file_reads",
+      "repetitions": 30,
+      "calls": 10,
+      "request_bytes": {
+        "samples": 30,
+        "min": 1463,
+        "p50": 1463,
+        "p95": 1463,
+        "max": 1463
+      },
+      "response_bytes": {
+        "samples": 30,
+        "min": 2193,
+        "p50": 2193,
+        "p95": 2193,
+        "max": 2193
+      },
+      "result_bytes": {
+        "samples": 30,
+        "min": 1806,
+        "p50": 1806,
+        "p95": 1806,
+        "max": 1806
+      },
+      "duration_ns": {
+        "samples": 30,
+        "min": 29018000,
+        "p50": 31484100,
+        "p95": 35314500,
+        "max": 35533800
+      },
+      "read_bytes": {
+        "samples": 30,
+        "min": 260,
+        "p50": 260,
+        "p95": 260,
+        "max": 260
+      },
+      "written_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "scanned_bytes": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "entries": {
+        "samples": 30,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "max": 0
+      },
+      "approx_tokens_bytes4": {
+        "samples": 30,
+        "min": 549,
+        "p50": 549,
+        "p95": 549,
+        "max": 549
+      },
+      "resources": {
+        "status": "supported",
+        "idle_working_set_bytes": {
+          "samples": 30,
+          "min": 6590464,
+          "p50": 6643712,
+          "p95": 6750208,
+          "max": 6762496
+        },
+        "peak_working_set_bytes": {
+          "samples": 30,
+          "min": 6815744,
+          "p50": 6877184,
+          "p95": 6991872,
+          "max": 7008256
+        },
+        "user_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 15625000,
+          "p95": 15625000,
+          "max": 31250000
+        },
+        "system_cpu_ns": {
+          "samples": 30,
+          "min": 0,
+          "p50": 15625000,
+          "p95": 31250000,
+          "max": 46875000
+        }
+      },
+      "exit_statuses": {
+        "0": 30
+      },
+      "stderr_warnings": [],
+      "stderr_warning_count": 0
+    }
+  ],
+  "budget_evaluation": {
+    "schema_version": "flashgate-benchmark-budgets/v1",
+    "hard_failures": 0,
+    "soft_warnings": 0,
+    "messages": []
+  },
+  "warnings": [],
+  "unsupported_metrics": []
+}

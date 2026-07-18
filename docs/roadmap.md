@@ -1,25 +1,68 @@
 # FlashGate MCP Roadmap
 
-`BACKLOG.md` is the only authoritative planning and steering document. This roadmap provides only the high-level sequence and intentionally does not duplicate the task catalog.
+`BACKLOG.md` is the only authoritative planning and steering document. This roadmap summarizes sequence and release boundaries without duplicating every canonical task.
 
 ## Current direction
 
-FlashGate MCP is the binding project name. Sprint 3.42 completed the repository, Go module, binary, and MCP server implementation name (`serverInfo.name`) rename; the current values are `blacksheepkhan/flashgate-mcp`, `github.com/blacksheepkhan/flashgate-mcp`, `flashgate-mcp`, and `flashgate`.
+FlashGate MCP is the binding project name. The current implementation is a native Go filesystem MCP over STDIO. Version 1.0 expands that core into a bounded local host-operation platform while preserving low startup latency, low RAM/CPU use, compact tool catalogs, and no interpreter runtime.
 
-The current implementation focuses on secure, root-confined filesystem tools. Filesystem contract and efficiency work comes before process and execution work because it exercises shared policies, limits, structured results, benchmarks, named roots, capabilities, and the Operations/Job Manager with a smaller risk surface.
+`Planned` backlog tasks are required for Version 1.0. `Later` tasks are accepted post-Version-1.0 work.
 
-## Sequence
+## Version 1.0 sequence
 
 | Phase | Sprints | Direction |
 |---|---|---|
 | Architecture and identity | 3.41 | FlashGate identity, ADR baseline, authoritative backlog consolidation |
-| Technical transition | 3.42-3.44 | Technical rename, pre-1.0 filesystem contract cleanup, Codex read-only preparation |
-| Shared foundations | 3.45-3.46 | Efficiency/contract baselines and Operations/Job Manager |
-| Filesystem and search | 3.47-3.49 | Efficient inspection, safe edits/plans, bounded search |
-| Policy model | 3.50 | Named roots, capabilities, and profiles |
-| Process and execution | 3.51-3.54 | Threat model, observation, managed execution, allowlisted commands/isolation |
+| Technical transition | 3.42-3.44 | Technical rename, pre-1.0 filesystem contract cleanup, read-only client preparation |
+| Efficiency and shared runtime | 3.45-3.46 | Payload/result architecture, tool/token budgets, native adapter policy, Operations/Job Manager, quotas, identity-bound state |
+| Filesystem and search | 3.47-3.49 | Efficient inspection, MIME/binary/large-result handling, safe edits/plans, bounded search |
+| Policy model | 3.50 | Named roots, read-only safe default, capabilities, profiles, dynamic tool registration, negative authorization tests |
+| Process and execution | 3.51-3.54 | Threat models, observation, managed processes, typed allowlisted commands, OS isolation, cursor output |
 | System information | 3.55 | Scoped and redacted host information |
+| Service architecture | 3.56 | Multi-mode/IPC contracts, hybrid execution identity, Variant A design, Variant B interfaces, audit lifecycle |
+| Native system services | 3.57 | Named Pipe/Unix socket, proxy/auto, Windows SCM, Linux systemd, service-account root backend |
+| Version 1.0 release gate | 3.58 | Multi-client/security validation, CI, cross-project benchmarks, supply-chain evidence, governance, documentation, packaging, rollback |
 
-Operations/jobs are optional shared runtime infrastructure, not a separate business domain or mandatory layer. Short synchronous work may run directly in domain services. Long-running or managed filesystem, search, process, execution, or system work retains its domain ownership while optionally using the common lifecycle manager.
+Version 1.0 implements service execution Variant A. Variant B's backend boundary and threat model are included so later user workers do not require public tool or domain redesign. Shared-process impersonation is excluded.
 
-See [BACKLOG.md](../BACKLOG.md) for canonical tasks, sprint IDs, status, and scope. See [architecture.md](architecture.md) for current state, accepted target architecture, planned components, and deferred decisions.
+## Version 1.0 release boundary
+
+Version 1.0 requires:
+
+- native Windows/Linux artifacts with no interpreter runtime;
+- direct STDIO for non-admin use;
+- optional local system service using the same binary;
+- safe read-only default when no higher-risk profile is selected;
+- bounded filesystem/search/process/execution/system domains;
+- typed command definitions without a general shell;
+- single-transmission payload contracts and large-result handles;
+- per-principal quotas and fair service scheduling;
+- supported MCP protocol/extension matrix and schema compatibility tests;
+- direct/proxy/service and cross-project efficiency benchmarks;
+- checksums, SBOM, provenance, signing plan, rollback, and complete documentation.
+
+See [Version 1.0 Scope and Release Boundary](version-1-scope-and-release-boundary.md).
+
+## Post-Version-1.0 direction
+
+Accepted post-Version-1.0 work includes:
+
+- per-user worker execution backend;
+- Linux user service and Windows per-user persistent host;
+- conditional read/not-modified optimization;
+- optional ripgrep adapter and search index;
+- legacy MCP Roots compatibility only for demonstrated client need;
+- external PID control, process input, and interactive-shell decision gates;
+- restricted network information;
+- external FlashGate provider/community ecosystem.
+
+No post-Version-1.0 item may be pulled into Version 1.0 without an explicit backlog/milestone change and corresponding risk, resource, and documentation review.
+
+## Architectural anchors
+
+- [Architecture](architecture.md)
+- [Security model](security.md)
+- [Efficiency improvement plan](efficiency-improvement-plan.md)
+- [Execution identity backends](execution-identity-backends.md)
+- [Native runtime and service plan](native-multi-mode-runtime-and-service-plan.md)
+- [Authoritative backlog](../BACKLOG.md)

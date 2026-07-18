@@ -38,3 +38,7 @@ Keep interfaces narrow and internal. Document module/provider needs as use cases
 ## Decision Gates
 
 Before the first external FlashGate provider, choose among statically linked extension packages registered at build time, registered in-process providers, or isolated out-of-process providers over local IPC. A Go module is only a possible source/versioning form for statically linked packages, not a runtime model. Before a binary split, record benchmarks and a threat model showing concrete benefit.
+
+## Amendment - 2026-07-17
+
+ADR-0014 accepts same-executable process roles for direct STDIO, local proxy/auto operation, and operating-system-managed service hosting. This is not a split into independently released product binaries and does not create an MCP-to-MCP or remote microservice architecture. The local IPC boundary is justified specifically by optional SCM/systemd and user-scoped background hosting and remains subject to service authorization, compatibility, benchmark, and threat-model gates.

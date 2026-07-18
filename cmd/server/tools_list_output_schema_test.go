@@ -10,14 +10,18 @@ import (
 	"github.com/blacksheepkhan/flashgate-mcp/internal/protocol"
 )
 
+var benchmarkToolsListWireSink []byte
+
 func TestToolsListWireOutputSchemasAndPayloadSizes(t *testing.T) {
 	tests := []struct {
-		name         string
-		capabilities toolCapabilities
-		toolCount    int
+		name                  string
+		capabilities          toolCapabilities
+		toolCount             int
+		expectedResponseBytes int
+		expectedResultBytes   int
 	}{
-		{"read-only", capabilitiesFromReadOnly(true), 3},
-		{"default", toolCapabilities{filesystemWrite: true}, 8},
+		{"read-only", capabilitiesFromReadOnly(true), 3, 2134, 2099},
+		{"default", toolCapabilities{filesystemWrite: true}, 8, 5657, 5622},
 	}
 
 	for _, tc := range tests {
@@ -28,6 +32,18 @@ func TestToolsListWireOutputSchemasAndPayloadSizes(t *testing.T) {
 			server := mcpserver.New(request, output, createRouter("test-server", "test-version", registry))
 			if err := server.Run(context.Background()); err != nil {
 				t.Fatal(err)
+			}
+			if output.Len() != tc.expectedResponseBytes {
+				t.Fatalf("response bytes=%d, want %d", output.Len(), tc.expectedResponseBytes)
+			}
+			var envelope struct {
+				Result json.RawMessage `json:"result"`
+			}
+			if err := json.Unmarshal(output.Bytes(), &envelope); err != nil {
+				t.Fatalf("invalid tools/list envelope: %v", err)
+			}
+			if len(envelope.Result) != tc.expectedResultBytes {
+				t.Fatalf("result bytes=%d, want %d", len(envelope.Result), tc.expectedResultBytes)
 			}
 
 			var response struct {
@@ -67,6 +83,49 @@ func TestToolsListWireOutputSchemasAndPayloadSizes(t *testing.T) {
 			percent := float64(delta) * 100 / float64(withoutSchemas)
 			t.Logf("profile=%s without=%dB with=%dB delta=%dB change=%.2f%% tools=%d schemas=%d",
 				tc.name, withoutSchemas, withSchemas, delta, percent, tc.toolCount, schemaCount)
+		})
+	}
+}
+
+func BenchmarkToolsListWireSerialization(b *testing.B) {
+	tests := []struct {
+		name         string
+		capabilities toolCapabilities
+	}{
+		{"read-only", capabilitiesFromReadOnly(true)},
+		{"default", toolCapabilities{filesystemWrite: true}},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		b.Run(tc.name, func(b *testing.B) {
+			registry := createToolRegistry(noopFileSystem{}, 1024, tc.capabilities)
+			sampleOutput := &bytes.Buffer{}
+			sampleServer := mcpserver.New(
+				bytes.NewBufferString("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{}}\n"),
+				sampleOutput,
+				createRouter("test-server", "test-version", registry),
+			)
+			if err := sampleServer.Run(context.Background()); err != nil {
+				b.Fatal(err)
+			}
+			b.ReportAllocs()
+			b.SetBytes(int64(sampleOutput.Len()))
+			b.ResetTimer()
+			for index := 0; index < b.N; index++ {
+				output := &bytes.Buffer{}
+				server := mcpserver.New(
+					bytes.NewBufferString("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{}}\n"),
+					output,
+					createRouter("test-server", "test-version", registry),
+				)
+				if err := server.Run(context.Background()); err != nil {
+					b.Fatal(err)
+				}
+				benchmarkToolsListWireSink = append(benchmarkToolsListWireSink[:0], output.Bytes()...)
+			}
+			b.StopTimer()
+			b.ReportMetric(float64(sampleOutput.Len()), "response-bytes")
 		})
 	}
 }

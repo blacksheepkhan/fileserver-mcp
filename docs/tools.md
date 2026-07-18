@@ -199,3 +199,22 @@ Parse, invalid-request, and method errors use the standard JSON-RPC codes. Expec
 Runtime `outputSchema` and `structuredContent` cover successful calls only. Stable machine-readable MCP tool-error payloads remain separate work.
 
 The previous pre-1.0 contract and required client changes are documented in [filesystem tool contract cleanup](filesystem-tool-contract-cleanup-2026-07-11.md).
+
+## Version 1.0 target contract direction
+
+The sections above describe the current eight-tool implementation. Version 1.0 expands the catalog only through capability profiles and retains a compact safe read-only default.
+
+Planned contract changes include:
+
+- paginated and field-bounded directory results;
+- line, byte, head, and tail file ranges;
+- batch reads, metadata, and hashing with bounded partial failure;
+- text/media/binary classification and explicit transfer modes;
+- targeted edits, conditional/atomic writes, dry-run previews, and bounded filesystem plans;
+- search, process, typed command, system-information, and job tools in separate capabilities;
+- accurate MCP tool annotations;
+- deterministic profile catalogs and compact initialization instructions;
+- payload classes that transmit large content once instead of duplicating it in text and structured fields;
+- opaque principal-bound result/resource handles for content that should not be embedded in one tool response.
+
+Version 1.0 tool names, schemas, annotations, limits, profiles, and error payloads become stable only after their canonical backlog tasks and the release gate are complete. The machine-readable catalog remains a current-implementation snapshot until replaced by generated Version 1.0 profile catalogs.
