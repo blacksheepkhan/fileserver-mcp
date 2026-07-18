@@ -36,7 +36,11 @@ compatibility but fail closed before any Go command, build, directory creation,
 benchmark execution, or output write. These wrappers are diagnostic development
 entry points, not an authoritative baseline-recording path. They also reject an
 explicit non-authoritative output below `benchmarks/` whose name matches the
-canonical `baseline.*-*.json` convention.
+canonical `baseline.*-*.json` convention. The Windows wrapper resolves the
+physical parent through directory handles, rejects alias, junction, symlink, and
+other reparse paths into the repository baseline directory, fails closed when a
+canonical-name parent cannot be resolved, and repeats the check immediately
+before starting the benchmark binary.
 
 ## Measurement environment
 
@@ -121,6 +125,12 @@ Ordinary local benchmark results remain allowed on dirty trees and record
 host-load window are contaminated diagnosis only.
 
 Versioned results must not contain absolute host paths, user names, secrets, temporary directory names, or raw private environment variables. The runner never serializes its binary path, corpus root, or environment and replaces known paths in captured stderr.
+
+Repository artifact tests load the Windows and Linux baselines together, enforce
+complete provenance, budget, resource, sample, exit-status, stderr, warning, and
+unsupported-metric gates, and compare an explicit deterministic cross-platform
+projection while excluding only time, memory, CPU, generation time, and platform
+identity fields.
 
 `budgets.json` separates deterministic hard contracts from noisy soft review limits:
 

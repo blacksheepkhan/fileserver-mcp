@@ -12,13 +12,180 @@ if ($RecordBaseline) {
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
-. (Join-Path $PSScriptRoot 'benchmark-window.ps1')
 
-$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+if (-not ('FlashGate.BenchmarkPathNative' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
+
+namespace FlashGate
+{
+    public static class BenchmarkPathNative
+    {
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern SafeFileHandle CreateFileW(
+            string fileName,
+            uint desiredAccess,
+            uint shareMode,
+            IntPtr securityAttributes,
+            uint creationDisposition,
+            uint flagsAndAttributes,
+            IntPtr templateFile);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern uint GetFinalPathNameByHandleW(
+            SafeFileHandle file,
+            System.Text.StringBuilder path,
+            uint pathLength,
+            uint flags);
+    }
+}
+'@
+}
+
+function ConvertFrom-ExtendedWindowsPath {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$Path)
+
+    if ($Path.StartsWith('\\?\UNC\', [StringComparison]::OrdinalIgnoreCase)) {
+        return '\\' + $Path.Substring(8)
+    }
+    if ($Path.StartsWith('\\?\', [StringComparison]::OrdinalIgnoreCase)) {
+        return $Path.Substring(4)
+    }
+    return $Path
+}
+
+function Get-PhysicalExistingPath {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$Path)
+
+    $NormalizedPath = [IO.Path]::GetFullPath($Path)
+    $Handle = [FlashGate.BenchmarkPathNative]::CreateFileW(
+        $NormalizedPath,
+        0,
+        7,
+        [IntPtr]::Zero,
+        3,
+        0x02000000,
+        [IntPtr]::Zero
+    )
+    if ($Handle.IsInvalid) {
+        $NativeError = [Runtime.InteropServices.Marshal]::GetLastWin32Error()
+        $Handle.Dispose()
+        throw [ComponentModel.Win32Exception]::new($NativeError, "Cannot resolve physical path: $NormalizedPath")
+    }
+
+    try {
+        $Capacity = 512
+        while ($true) {
+            $Buffer = [Text.StringBuilder]::new($Capacity)
+            $Length = [FlashGate.BenchmarkPathNative]::GetFinalPathNameByHandleW($Handle, $Buffer, [uint32]$Buffer.Capacity, 0)
+            if ($Length -eq 0) {
+                $NativeError = [Runtime.InteropServices.Marshal]::GetLastWin32Error()
+                throw [ComponentModel.Win32Exception]::new($NativeError, "Cannot resolve final physical path: $NormalizedPath")
+            }
+            if ($Length -lt $Buffer.Capacity) {
+                return [IO.Path]::TrimEndingDirectorySeparator((ConvertFrom-ExtendedWindowsPath -Path $Buffer.ToString()))
+            }
+            $Capacity = [int]$Length + 1
+        }
+    }
+    finally {
+        $Handle.Dispose()
+    }
+}
+
+function Assert-NonAuthoritativeOutputPath {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$CandidatePath,
+        [Parameter(Mandatory)][string]$RepositoryRoot
+    )
+
+    $OutputFullPath = [IO.Path]::GetFullPath($CandidatePath)
+    $FileName = [IO.Path]::GetFileName($OutputFullPath)
+    $IsCanonicalName = $FileName -like 'baseline.*-*.json'
+    if (-not $IsCanonicalName) {
+        return [pscustomobject]@{
+            OutputFullPath = $OutputFullPath
+            IsCanonicalName = $false
+            PhysicalParent = $null
+            PhysicalTarget = $null
+        }
+    }
+
+    $ParentPath = [IO.Path]::GetDirectoryName($OutputFullPath)
+    try {
+        $PhysicalParent = Get-PhysicalExistingPath -Path $ParentPath
+        $PhysicalBenchmarkDirectory = Get-PhysicalExistingPath -Path (Join-Path $RepositoryRoot 'benchmarks')
+    }
+    catch {
+        throw 'Non-authoritative benchmark runs must not use a canonical baseline name below an unresolved physical parent path.'
+    }
+
+    if ($PhysicalParent.Equals($PhysicalBenchmarkDirectory, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'Non-authoritative benchmark runs must not write a canonical versioned baseline path.'
+    }
+
+    $PhysicalTarget = $null
+    $ExistingTarget = Get-Item -LiteralPath $OutputFullPath -Force -ErrorAction SilentlyContinue
+    if ($null -ne $ExistingTarget) {
+        try {
+            $PhysicalTarget = Get-PhysicalExistingPath -Path $OutputFullPath
+        }
+        catch {
+            throw 'Non-authoritative benchmark runs must not use an unresolved reparse target with a canonical baseline name.'
+        }
+        $PhysicalTargetParent = [IO.Path]::GetDirectoryName($PhysicalTarget)
+        if ($PhysicalTargetParent.Equals($PhysicalBenchmarkDirectory, [StringComparison]::OrdinalIgnoreCase)) {
+            throw 'Non-authoritative benchmark runs must not write a canonical versioned baseline path.'
+        }
+    }
+
+    return [pscustomobject]@{
+        OutputFullPath = $OutputFullPath
+        IsCanonicalName = $true
+        PhysicalParent = $PhysicalParent
+        PhysicalTarget = $PhysicalTarget
+    }
+}
+
+function Assert-OutputPathUnchanged {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]$InitialState,
+        [Parameter(Mandatory)]$CurrentState
+    )
+
+    if (-not $InitialState.IsCanonicalName) {
+        return
+    }
+    $Comparer = [StringComparer]::OrdinalIgnoreCase
+    if (-not $Comparer.Equals([string]$InitialState.PhysicalParent, [string]$CurrentState.PhysicalParent) -or
+        -not $Comparer.Equals([string]$InitialState.PhysicalTarget, [string]$CurrentState.PhysicalTarget)) {
+        throw 'Non-authoritative benchmark output path changed after physical validation; refusing to start the benchmark.'
+    }
+}
+
+$RepoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $BuildDirectory = Join-Path $RepoRoot 'build'
 $ServerBinary = Join-Path $BuildDirectory 'flashgate-mcp.exe'
 $BenchmarkBinary = Join-Path $BuildDirectory 'flashgate-benchmark.exe'
 $BudgetPath = Join-Path $RepoRoot 'benchmarks\budgets.json'
+
+if ([string]::IsNullOrWhiteSpace($OutputPath)) {
+    $OutputPath = Join-Path $BuildDirectory 'benchmark-current.windows-amd64.json'
+}
+elseif (-not [IO.Path]::IsPathRooted($OutputPath)) {
+    $OutputPath = Join-Path $RepoRoot $OutputPath
+}
+$InitialOutputPolicyState = Assert-NonAuthoritativeOutputPath -CandidatePath $OutputPath -RepositoryRoot $RepoRoot
+$OutputPath = $InitialOutputPolicyState.OutputFullPath
+
+. (Join-Path $PSScriptRoot 'benchmark-window.ps1')
+
 $Status = 'FAIL'
 $WarningCount = 0
 $FailureCount = 0
@@ -30,20 +197,6 @@ $PerformanceContaminated = $false
 $MeasurementWarning = $null
 
 try {
-    if ([string]::IsNullOrWhiteSpace($OutputPath)) {
-        $OutputPath = Join-Path $BuildDirectory 'benchmark-current.windows-amd64.json'
-    }
-    elseif (-not [IO.Path]::IsPathRooted($OutputPath)) {
-        $OutputPath = Join-Path $RepoRoot $OutputPath
-    }
-
-    $OutputFullPath = [IO.Path]::GetFullPath($OutputPath)
-    $BenchmarkDirectory = [IO.Path]::GetFullPath((Join-Path $RepoRoot 'benchmarks'))
-    if ([IO.Path]::GetDirectoryName($OutputFullPath).Equals($BenchmarkDirectory, [StringComparison]::OrdinalIgnoreCase) -and [IO.Path]::GetFileName($OutputFullPath) -like 'baseline.*-*.json') {
-        throw 'Non-authoritative benchmark runs must not write a canonical versioned baseline path.'
-    }
-    $OutputPath = $OutputFullPath
-
     $PerformanceContaminated = (Get-EuropeViennaMeasurementWindowStatus).IsBlocked
 
     $InitialStatus = @(& git status --porcelain --untracked-files=all)
@@ -68,6 +221,8 @@ try {
         $Arguments += '-quick'
     }
 
+    $CurrentOutputPolicyState = Assert-NonAuthoritativeOutputPath -CandidatePath $RunOutputPath -RepositoryRoot $RepoRoot
+    Assert-OutputPathUnchanged -InitialState $InitialOutputPolicyState -CurrentState $CurrentOutputPolicyState
     $BenchmarkOutput = @(& $BenchmarkBinary @Arguments 2>&1)
     $Result = Get-Content -LiteralPath $RunOutputPath -Raw | ConvertFrom-Json
     $WarningCount = @($Result.warnings).Count

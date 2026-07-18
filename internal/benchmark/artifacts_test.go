@@ -97,9 +97,9 @@ func TestVersionedBenchmarkArtifacts(t *testing.T) {
 func forbiddenBenchmarkArtifactPatterns() []*regexp.Regexp {
 	return []*regexp.Regexp{
 		regexp.MustCompile(`(^|["[:space:]])[A-Za-z]:[\\/]`),
-		regexp.MustCompile(`(?i)\\Users\\|/home/|/Users/|ThomasW`),
+		regexp.MustCompile(`(?i)\\Users\\|/home/|/Users/|OneDrive|ThomasW`),
 		regexp.MustCompile(`flashgate-benchmark-[0-9]`),
-		regexp.MustCompile(`(?i)(api[_-]?key|password|bearer[ :]|private[_-]?key|connection[_-]?string)`),
+		regexp.MustCompile(`(?i)(auth\.json|api[_-]?key|password|secret|token\s*=|bearer[ :]|private[_-]?key|connection[_-]?string)`),
 	}
 }
 
