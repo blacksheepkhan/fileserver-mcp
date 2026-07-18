@@ -23,7 +23,8 @@ type loadedPlatformBaseline struct {
 }
 
 func TestCompleteVersionedPlatformBaselines(t *testing.T) {
-	baselines, err := loadRequiredPlatformBaselines(filepath.Join("..", "..", "benchmarks"))
+	benchmarkDirectory := filepath.Join("..", "..", "benchmarks")
+	baselines, err := loadRequiredPlatformBaselines(benchmarkDirectory, filepath.Join(benchmarkDirectory, "budgets.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +45,8 @@ func TestCompleteVersionedPlatformBaselines(t *testing.T) {
 }
 
 func TestCompletePlatformBaselineValidatorRejectsMutations(t *testing.T) {
-	baselines, err := loadRequiredPlatformBaselines(filepath.Join("..", "..", "benchmarks"))
+	benchmarkDirectory := filepath.Join("..", "..", "benchmarks")
+	baselines, err := loadRequiredPlatformBaselines(benchmarkDirectory, filepath.Join(benchmarkDirectory, "budgets.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +66,7 @@ func TestCompletePlatformBaselineValidatorRejectsMutations(t *testing.T) {
 		{"workflow order", "workflow order", func(windows, _ *Result) {
 			windows.Workflows[0], windows.Workflows[1] = windows.Workflows[1], windows.Workflows[0]
 		}},
-		{"deterministic byte mismatch", "deterministic platform projection", func(_, linux *Result) {
+		{"deterministic byte mismatch", "cross-platform deterministic projection", func(_, linux *Result) {
 			linux.ToolsList[0].ResponseBytes++
 		}},
 		{"missing workflow", "workflow count", func(windows, _ *Result) { windows.Workflows = windows.Workflows[:len(windows.Workflows)-1] }},
@@ -93,6 +95,7 @@ func TestCompletePlatformBaselineValidatorRejectsMutations(t *testing.T) {
 }
 
 func TestLoadRequiredPlatformBaselinesRejectsInvalidSets(t *testing.T) {
+	budgetPath := filepath.Join("..", "..", "benchmarks", "budgets.json")
 	validWindows := Result{OS: "windows", Architecture: expectedBaselineArch}
 	validLinux := Result{OS: "linux", Architecture: expectedBaselineArch}
 	tests := []struct {
@@ -113,27 +116,23 @@ func TestLoadRequiredPlatformBaselinesRejectsInvalidSets(t *testing.T) {
 			if !tc.omitLinux {
 				writeTestBaseline(t, filepath.Join(directory, "baseline.linux-amd64.json"), tc.linux)
 			}
-			if _, err := loadRequiredPlatformBaselines(directory); err == nil {
+			if _, err := loadRequiredPlatformBaselines(directory, budgetPath); err == nil {
 				t.Fatal("invalid platform baseline set was accepted")
 			}
 		})
 	}
 }
 
-func loadRequiredPlatformBaselines(directory string) (map[string]loadedPlatformBaseline, error) {
+func loadRequiredPlatformBaselines(directory string, budgetPath string) (map[string]loadedPlatformBaseline, error) {
 	paths := []string{
 		filepath.Join(directory, "baseline.windows-amd64.json"),
 		filepath.Join(directory, "baseline.linux-amd64.json"),
 	}
 	baselines := make(map[string]loadedPlatformBaseline, len(paths))
 	for _, path := range paths {
-		raw, err := os.ReadFile(path)
+		result, raw, err := loadValidatedBaselineArtifact(path, budgetPath)
 		if err != nil {
-			return nil, fmt.Errorf("read required platform baseline %s: %w", filepath.Base(path), err)
-		}
-		var result Result
-		if err := json.Unmarshal(raw, &result); err != nil {
-			return nil, fmt.Errorf("decode required platform baseline %s: %w", filepath.Base(path), err)
+			return nil, err
 		}
 		if result.OS != "windows" && result.OS != "linux" {
 			return nil, fmt.Errorf("unknown baseline platform %q", result.OS)
@@ -379,7 +378,7 @@ func validateDeterministicPlatformMatch(windows Result, linux Result) error {
 	windowsProjection := projectDeterministicBaseline(windows)
 	linuxProjection := projectDeterministicBaseline(linux)
 	if !reflect.DeepEqual(windowsProjection, linuxProjection) {
-		return fmt.Errorf("deterministic platform projection differs")
+		return fmt.Errorf("artifacts baseline.windows-amd64.json and baseline.linux-amd64.json cross-platform deterministic projection differs")
 	}
 	return nil
 }

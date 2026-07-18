@@ -189,10 +189,10 @@ func LoadSerializationBudgets(path string) (map[string]SerializationBudget, erro
 func loadBudgetFile(path string) (budgetFile, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return budgetFile{}, fmt.Errorf("read benchmark budgets: %w", err)
+		return budgetFile{}, benchmarkReadError("benchmark budgets", path, err)
 	}
 	var budgets budgetFile
-	if err := json.Unmarshal(data, &budgets); err != nil {
+	if err := decodeStrictJSON(data, &budgets); err != nil {
 		return budgetFile{}, fmt.Errorf("decode benchmark budgets: %w", err)
 	}
 	if budgets.SchemaVersion != BudgetSchemaVersion {
@@ -204,15 +204,21 @@ func loadBudgetFile(path string) (budgetFile, error) {
 func loadExpectedWorkflowNames(path string) ([]string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("read benchmark workflow catalog: %w", err)
+		return nil, benchmarkReadError("benchmark workflow catalog", path, err)
 	}
 	var catalog struct {
-		SchemaVersion string `json:"schema_version"`
-		Workflows     []struct {
-			Name string `json:"name"`
+		SchemaVersion        string `json:"schema_version"`
+		Profile              string `json:"profile"`
+		ProcessPerRepetition bool   `json:"process_per_repetition"`
+		Workflows            []struct {
+			Name              string   `json:"name"`
+			Steps             []string `json:"steps"`
+			ToolsCallCount    int      `json:"tools_call_count"`
+			ExpectedReadBytes *uint64  `json:"expected_read_bytes,omitempty"`
+			ExpectedEntries   *uint64  `json:"expected_entries,omitempty"`
 		} `json:"workflows"`
 	}
-	if err := json.Unmarshal(data, &catalog); err != nil {
+	if err := decodeStrictJSON(data, &catalog); err != nil {
 		return nil, fmt.Errorf("decode benchmark workflow catalog: %w", err)
 	}
 	if catalog.SchemaVersion != WorkflowCatalogVersion {

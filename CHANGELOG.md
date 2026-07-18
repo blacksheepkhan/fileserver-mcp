@@ -18,6 +18,7 @@ The format follows the spirit of [Keep a Changelog](https://keepachangelog.com/)
 
 ### Changed
 
+- BL-314 makes versioned benchmark artifact validation authoritative: Windows and Linux artifacts are strictly decoded, checked against complete Go schema invariants, independently reevaluated from canonical budgets, compared exactly with embedded budget results, and rejected before cross-platform comparison on any hard failure or inconsistency.
 - Non-authoritative benchmark output now binds the validated parent through `os.Root`, writes and syncs an exclusive temporary file through that stable handle, and publishes with a handle-relative rename that never follows the final target; all diagnostic names, final symlinks/reparse points, protected-directory aliases, and late output/protected-directory exchanges fail closed.
 - Registered the eight Major/Minor findings deferred from the independent PR #15 review as canonical post-merge tasks `BL-314` through `BL-321` without implementing them in the blocker fix.
 - Sprint 3.45d keeps functional serialization coverage active under race while evaluating allocation budgets only without race instrumentation; legacy baseline-record flags now fail closed in favor of the authoritative two-phase prebuilt workflow.
