@@ -34,13 +34,26 @@ bash scripts/benchmark.sh --quick
 The legacy `-RecordBaseline` and `--record-baseline` flags remain recognized for
 compatibility but fail closed before any Go command, build, directory creation,
 benchmark execution, or output write. These wrappers are diagnostic development
-entry points, not an authoritative baseline-recording path. They also reject an
-explicit non-authoritative output below `benchmarks/` whose name matches the
-canonical `baseline.*-*.json` convention. The Windows wrapper resolves the
-physical parent through directory handles, rejects alias, junction, symlink, and
-other reparse paths into the repository baseline directory, fails closed when a
-canonical-name parent cannot be resolved, and repeats the check immediately
-before starting the benchmark binary.
+entry points, not an authoritative baseline-recording path. Every explicit or
+default non-authoritative output name is checked physically. The wrappers reject
+alias, junction, symlink, and other reparse parents into the repository baseline
+directory, as well as existing final file symlinks/reparse points and unresolved
+canonical baseline targets. The Linux default output is subject to the same
+checks as an explicit path, and both wrappers repeat their policy check
+immediately before starting the benchmark binary.
+
+The runner then enforces the write boundary independently of the wrapper. It
+opens the protected baseline directory and validated output parent as stable
+`os.Root` handles (a directory handle on Windows and dirfd-based root on Linux),
+compares their physical identities, and never opens an existing output target
+for writing. The result is written and synced to a new exclusive temporary file
+through the bound output root and published through a handle-relative rename,
+which replaces rather than follows a final symlink introduced after validation.
+The published directory entry must still identify the same opened file. An
+output-parent or protected-directory path that changes after validation causes
+fail-closed cleanup through the bound root. Normal diagnostic output therefore
+cannot write through an alias into a versioned baseline; authoritative baseline
+recording remains a separate process.
 
 ## Measurement environment
 

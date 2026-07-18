@@ -103,6 +103,7 @@ try {
     New-Item -ItemType Junction -Path $DirectJunction -Target $FakeBenchmarks | Out-Null
     $Junctions.Add($DirectJunction)
     Test-BlockedCanonicalPath -Name 'direct benchmark junction' -Path (Join-Path $DirectJunction 'baseline.windows-amd64.json')
+    Test-BlockedCanonicalPath -Name 'noncanonical benchmark junction' -Path (Join-Path $DirectJunction 'benchmark-current.windows-amd64.json')
 
     $RepositoryJunction = Join-Path $AliasRoot 'alias-repository'
     New-Item -ItemType Junction -Path $RepositoryJunction -Target $FakeRepository | Out-Null
@@ -157,6 +158,34 @@ try {
         Test-Condition (-not (Test-Path -LiteralPath $GitMarker)) 'existing file symlink does not invoke git'
         Test-Condition (-not (Test-Path -LiteralPath $GoMarker)) 'existing file symlink does not invoke go'
         Test-Condition (([IO.File]::ReadAllText($ExistingBaselineTarget)) -eq 'existing') 'existing file symlink target remains unchanged'
+
+        $NoncanonicalFileSymlink = Join-Path $DiagnosticDirectory 'benchmark-current.windows-amd64.json'
+        New-Item -ItemType SymbolicLink -Path $NoncanonicalFileSymlink -Target $ExistingBaselineTarget -ErrorAction Stop | Out-Null
+        $Junctions.Add($NoncanonicalFileSymlink)
+        Remove-TestMarkers
+        $NoncanonicalLinkResult = Invoke-TestWrapper -WrapperPath $Wrapper -Arguments @('-OutputPath', $NoncanonicalFileSymlink)
+        $NoncanonicalLinkCombined = $NoncanonicalLinkResult.StandardOutput + "`n" + $NoncanonicalLinkResult.StandardError
+        Test-Condition ($NoncanonicalLinkResult.ExitCode -ne 0) 'noncanonical file symlink exits nonzero'
+        Test-Condition ($NoncanonicalLinkCombined -match 'final symbolic link or reparse-point') 'noncanonical file symlink emits policy error'
+        Test-Condition (-not (Test-Path -LiteralPath $GitMarker)) 'noncanonical file symlink does not invoke git'
+        Test-Condition (-not (Test-Path -LiteralPath $GoMarker)) 'noncanonical file symlink does not invoke go'
+        Test-Condition (([IO.File]::ReadAllText($ExistingBaselineTarget)) -eq 'existing') 'noncanonical file symlink target remains unchanged'
+        Remove-Item -LiteralPath $NoncanonicalFileSymlink -Force
+
+        $BrokenFileTarget = Join-Path $DiagnosticDirectory 'broken-target.json'
+        $BrokenFileSymlink = Join-Path $DiagnosticDirectory 'benchmark-broken.windows-amd64.json'
+        [IO.File]::WriteAllText($BrokenFileTarget, 'temporary')
+        New-Item -ItemType SymbolicLink -Path $BrokenFileSymlink -Target $BrokenFileTarget -ErrorAction Stop | Out-Null
+        $Junctions.Add($BrokenFileSymlink)
+        Remove-Item -LiteralPath $BrokenFileTarget
+        Remove-TestMarkers
+        $BrokenFileResult = Invoke-TestWrapper -WrapperPath $Wrapper -Arguments @('-OutputPath', $BrokenFileSymlink)
+        $BrokenFileCombined = $BrokenFileResult.StandardOutput + "`n" + $BrokenFileResult.StandardError
+        Test-Condition ($BrokenFileResult.ExitCode -ne 0) 'broken final file symlink exits nonzero'
+        Test-Condition ($BrokenFileCombined -match 'final symbolic link or reparse-point') 'broken final file symlink emits policy error'
+        Test-Condition (-not (Test-Path -LiteralPath $GitMarker)) 'broken final file symlink does not invoke git'
+        Test-Condition (-not (Test-Path -LiteralPath $GoMarker)) 'broken final file symlink does not invoke go'
+        Test-Condition (([IO.File]::ReadAllText($ExistingBaselineTarget)) -eq 'existing') 'broken final file symlink leaves baseline unchanged'
     }
     catch {
         $Notes.Add('File symlink creation is not supported by the current Windows configuration; directory reparse coverage executed.')
@@ -185,7 +214,7 @@ try {
         'exit /b 0'
     ) | Set-Content -LiteralPath $GitStub -Encoding ascii
     @('@echo off', ('type nul > "{0}"' -f $GoMarker), 'exit /b 0') | Set-Content -LiteralPath $GoStub -Encoding ascii
-    $ChangedOutput = Join-Path $MutableJunction 'baseline.windows-amd64.json'
+    $ChangedOutput = Join-Path $MutableJunction 'benchmark-current.windows-amd64.json'
     $ChangedResult = Invoke-TestWrapper -WrapperPath $Wrapper -Arguments @('-Quick', '-OutputPath', $ChangedOutput)
     $ChangedCombined = $ChangedResult.StandardOutput + "`n" + $ChangedResult.StandardError
     Test-Condition ($ChangedResult.ExitCode -ne 0) 'TOCTOU reparse change exits nonzero'

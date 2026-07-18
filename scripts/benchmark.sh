@@ -37,17 +37,34 @@ build_dir="${repo_root}/build"
 server_binary="${build_dir}/flashgate-mcp"
 benchmark_binary="${build_dir}/flashgate-benchmark"
 budget_path="${repo_root}/benchmarks/budgets.json"
+protected_baseline_dir="$(realpath -e -- "${repo_root}/benchmarks")"
 
-if [[ -n "${output_path}" ]]; then
-  if [[ "${output_path}" != /* ]]; then
-    output_path="${repo_root}/${output_path}"
+assert_non_authoritative_output_path() {
+  local candidate_path="$1"
+  local parent_path
+  local physical_parent
+
+  if [[ -L "${candidate_path}" ]]; then
+    printf 'Non-authoritative benchmark runs must not use a final symbolic-link output target.\n' >&2
+    return 1
   fi
-  output_path="$(realpath -m -- "${output_path}")"
-  if [[ "${output_path}" == "${repo_root}"/benchmarks/baseline.*-*.json ]]; then
-    printf 'Non-authoritative benchmark runs must not write a canonical versioned baseline path.\n' >&2
-    exit 1
+  if [[ -e "${candidate_path}" && ! -f "${candidate_path}" ]]; then
+    printf 'Non-authoritative benchmark output targets must be regular files.\n' >&2
+    return 1
   fi
-fi
+
+  parent_path="$(dirname -- "${candidate_path}")"
+  if [[ -e "${parent_path}" ]]; then
+    physical_parent="$(realpath -e -- "${parent_path}")"
+    if [[ "${physical_parent}" == "${protected_baseline_dir}" ]]; then
+      printf 'Non-authoritative benchmark runs must not write into the protected baseline directory.\n' >&2
+      return 1
+    fi
+  elif [[ "$(basename -- "${candidate_path}")" == baseline.*-*.json ]]; then
+    printf 'Non-authoritative benchmark runs must not use a canonical baseline name below an unresolved physical parent path.\n' >&2
+    return 1
+  fi
+}
 
 # shellcheck source=benchmark-window.sh
 source "${script_dir}/benchmark-window.sh"
@@ -56,11 +73,15 @@ if measurement_window_is_blocked; then
   performance_contaminated=true
 fi
 
-working_tree_dirty="$(git status --porcelain --untracked-files=all)"
-
 if [[ -z "${output_path}" ]]; then
   output_path="${build_dir}/benchmark-current.linux-$(go env GOARCH).json"
+elif [[ "${output_path}" != /* ]]; then
+  output_path="${repo_root}/${output_path}"
 fi
+output_path="$(realpath -m -s -- "${output_path}")"
+assert_non_authoritative_output_path "${output_path}"
+
+working_tree_dirty="$(git status --porcelain --untracked-files=all)"
 
 mkdir -p "${build_dir}"
 go build -o "${server_binary}" ./cmd/server
@@ -72,6 +93,7 @@ arguments=(
   -output "${output_path}"
   -commit "${commit}"
   -budgets "${budget_path}"
+  -protected-baseline-dir "${protected_baseline_dir}"
 )
 if [[ -n "${working_tree_dirty}" ]]; then
   arguments+=(-working-tree-dirty)
@@ -80,6 +102,7 @@ if [[ "${quick}" == true ]]; then
   arguments+=(-quick)
 fi
 
+assert_non_authoritative_output_path "${output_path}"
 "${benchmark_binary}" "${arguments[@]}"
 
 if measurement_window_is_blocked; then

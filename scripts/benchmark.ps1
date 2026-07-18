@@ -107,31 +107,31 @@ function Assert-NonAuthoritativeOutputPath {
     $OutputFullPath = [IO.Path]::GetFullPath($CandidatePath)
     $FileName = [IO.Path]::GetFileName($OutputFullPath)
     $IsCanonicalName = $FileName -like 'baseline.*-*.json'
-    if (-not $IsCanonicalName) {
-        return [pscustomobject]@{
-            OutputFullPath = $OutputFullPath
-            IsCanonicalName = $false
-            PhysicalParent = $null
-            PhysicalTarget = $null
+    $ParentPath = [IO.Path]::GetDirectoryName($OutputFullPath)
+    $PhysicalBenchmarkDirectory = Get-PhysicalExistingPath -Path (Join-Path $RepositoryRoot 'benchmarks')
+    $PhysicalParent = $null
+    try {
+        $PhysicalParent = Get-PhysicalExistingPath -Path $ParentPath
+    }
+    catch {
+        if ($IsCanonicalName) {
+            throw 'Non-authoritative benchmark runs must not use a canonical baseline name below an unresolved physical parent path.'
         }
     }
 
-    $ParentPath = [IO.Path]::GetDirectoryName($OutputFullPath)
-    try {
-        $PhysicalParent = Get-PhysicalExistingPath -Path $ParentPath
-        $PhysicalBenchmarkDirectory = Get-PhysicalExistingPath -Path (Join-Path $RepositoryRoot 'benchmarks')
-    }
-    catch {
-        throw 'Non-authoritative benchmark runs must not use a canonical baseline name below an unresolved physical parent path.'
-    }
-
-    if ($PhysicalParent.Equals($PhysicalBenchmarkDirectory, [StringComparison]::OrdinalIgnoreCase)) {
+    if ($null -ne $PhysicalParent -and $PhysicalParent.Equals($PhysicalBenchmarkDirectory, [StringComparison]::OrdinalIgnoreCase)) {
         throw 'Non-authoritative benchmark runs must not write a canonical versioned baseline path.'
     }
 
     $PhysicalTarget = $null
     $ExistingTarget = Get-Item -LiteralPath $OutputFullPath -Force -ErrorAction SilentlyContinue
     if ($null -ne $ExistingTarget) {
+        if (($ExistingTarget.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
+            throw 'Non-authoritative benchmark runs must not use a final symbolic link or reparse-point output target.'
+        }
+        if ($ExistingTarget.PSIsContainer) {
+            throw 'Non-authoritative benchmark output targets must be regular files.'
+        }
         try {
             $PhysicalTarget = Get-PhysicalExistingPath -Path $OutputFullPath
         }
@@ -159,12 +159,11 @@ function Assert-OutputPathUnchanged {
         [Parameter(Mandatory)]$CurrentState
     )
 
-    if (-not $InitialState.IsCanonicalName) {
-        return
-    }
     $Comparer = [StringComparer]::OrdinalIgnoreCase
-    if (-not $Comparer.Equals([string]$InitialState.PhysicalParent, [string]$CurrentState.PhysicalParent) -or
-        -not $Comparer.Equals([string]$InitialState.PhysicalTarget, [string]$CurrentState.PhysicalTarget)) {
+    $ParentChanged = $null -ne $InitialState.PhysicalParent -and
+        -not $Comparer.Equals([string]$InitialState.PhysicalParent, [string]$CurrentState.PhysicalParent)
+    $TargetChanged = -not $Comparer.Equals([string]$InitialState.PhysicalTarget, [string]$CurrentState.PhysicalTarget)
+    if ($ParentChanged -or $TargetChanged) {
         throw 'Non-authoritative benchmark output path changed after physical validation; refusing to start the benchmark.'
     }
 }
@@ -173,6 +172,7 @@ $RepoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $BuildDirectory = Join-Path $RepoRoot 'build'
 $ServerBinary = Join-Path $BuildDirectory 'flashgate-mcp.exe'
 $BenchmarkBinary = Join-Path $BuildDirectory 'flashgate-benchmark.exe'
+$ProtectedBaselineDirectory = Join-Path $RepoRoot 'benchmarks'
 $BudgetPath = Join-Path $RepoRoot 'benchmarks\budgets.json'
 
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
@@ -212,7 +212,8 @@ try {
         '-binary', $ServerBinary,
         '-output', $RunOutputPath,
         '-commit', $Commit,
-        '-budgets', $BudgetPath
+        '-budgets', $BudgetPath,
+        '-protected-baseline-dir', $ProtectedBaselineDirectory
     )
     if ($WorkingTreeDirty) {
         $Arguments += '-working-tree-dirty'

@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 
 	benchmarkrunner "github.com/blacksheepkhan/flashgate-mcp/internal/benchmark"
@@ -22,6 +21,7 @@ func run() int {
 	var binaryPath string
 	var outputPath string
 	var budgetPath string
+	var protectedBaselineDirectory string
 	var commit string
 	var repetitions int
 	var quick bool
@@ -30,6 +30,7 @@ func run() int {
 	flag.StringVar(&binaryPath, "binary", "", "path to the built FlashGate server binary")
 	flag.StringVar(&outputPath, "output", "benchmark-result.json", "machine-readable result path")
 	flag.StringVar(&budgetPath, "budgets", "", "optional machine-readable regression budget path")
+	flag.StringVar(&protectedBaselineDirectory, "protected-baseline-dir", "", "protected repository baseline directory")
 	flag.StringVar(&commit, "commit", "unknown", "source commit recorded in the result")
 	flag.IntVar(&repetitions, "repetitions", 30, "number of subsequent starts and workflow repetitions")
 	flag.BoolVar(&quick, "quick", false, "use ten subsequent starts and workflow repetitions")
@@ -62,13 +63,7 @@ func run() int {
 		return 1
 	}
 	encoded = append(encoded, '\n')
-	if parent := filepath.Dir(outputPath); parent != "." {
-		if err := os.MkdirAll(parent, 0o755); err != nil {
-			fmt.Fprintf(os.Stderr, "benchmark: create output directory: %v\n", err)
-			return 1
-		}
-	}
-	if err := os.WriteFile(outputPath, encoded, 0o600); err != nil {
+	if err := benchmarkrunner.WriteResultFile(outputPath, protectedBaselineDirectory, encoded); err != nil {
 		fmt.Fprintf(os.Stderr, "benchmark: write result: %v\n", err)
 		return 1
 	}

@@ -25,14 +25,15 @@ trap cleanup EXIT
 temporary_directory="$(mktemp -d)"
 fake_repository="${temporary_directory}/repo"
 fake_scripts="${fake_repository}/scripts"
+fake_benchmarks="${fake_repository}/benchmarks"
 stub_directory="${temporary_directory}/stub"
-mkdir -p -- "${fake_scripts}" "${stub_directory}"
+mkdir -p -- "${fake_scripts}" "${fake_benchmarks}" "${stub_directory}"
 wrapper="${fake_scripts}/benchmark.sh"
 cp -- "${script_dir}/benchmark.sh" "${wrapper}"
 marker="${temporary_directory}/go-invoked.marker"
 output="${temporary_directory}/baseline.linux-amd64.json"
 stub="${stub_directory}/go"
-printf '#!/usr/bin/env bash\n: > %q\nexit 97\n' "${marker}" >"${stub}"
+printf '#!/usr/bin/env bash\n: > %q\nif [[ "$1" == env && "$2" == GOARCH ]]; then printf "amd64\\n"; exit 0; fi\nexit 97\n' "${marker}" >"${stub}"
 chmod 700 "${stub}"
 
 stdout_path="${temporary_directory}/stdout.log"
@@ -61,6 +62,61 @@ check "$([[ -z "${canonical_stdout}" ]] && printf true || printf false)" 'canoni
 check "$([[ ! -e "${marker}" ]] && printf true || printf false)" 'canonical-path rejection does not invoke go'
 check "$([[ ! -e "${fake_repository}/benchmarks/baseline.linux-amd64.json" ]] && printf true || printf false)" 'canonical-path rejection does not write output'
 check "$([[ ! -d "${fake_repository}/build" ]] && printf true || printf false)" 'canonical-path rejection does not create build directory'
+
+baseline_target="${fake_benchmarks}/baseline.linux-amd64.json"
+printf 'baseline' >"${baseline_target}"
+baseline_hash="$(sha256sum "${baseline_target}" | cut -d ' ' -f 1)"
+
+rm -f -- "${marker}"
+alias_directory="${temporary_directory}/alias-benchmarks"
+ln -s -- "${fake_benchmarks}" "${alias_directory}"
+alias_output="${alias_directory}/benchmark-current.linux-amd64.json"
+: >"${stdout_path}"
+: >"${stderr_path}"
+PATH="${stub_directory}:${PATH}" bash "${wrapper}" --output "${alias_output}" >"${stdout_path}" 2>"${stderr_path}"
+alias_exit_code=$?
+alias_stderr="$(<"${stderr_path}")"
+check "$([[ ${alias_exit_code} -ne 0 ]] && printf true || printf false)" 'noncanonical baseline-directory alias exits nonzero'
+check "$([[ "${alias_stderr}" == *'protected baseline directory'* ]] && printf true || printf false)" 'noncanonical baseline-directory alias emits policy error'
+check "$([[ ! -e "${marker}" ]] && printf true || printf false)" 'noncanonical baseline-directory alias does not invoke go'
+
+rm -f -- "${marker}"
+linked_output="${temporary_directory}/benchmark-current.linux-amd64.json"
+ln -s -- "${baseline_target}" "${linked_output}"
+: >"${stdout_path}"
+: >"${stderr_path}"
+PATH="${stub_directory}:${PATH}" bash "${wrapper}" --output "${linked_output}" >"${stdout_path}" 2>"${stderr_path}"
+linked_exit_code=$?
+linked_stderr="$(<"${stderr_path}")"
+check "$([[ ${linked_exit_code} -ne 0 ]] && printf true || printf false)" 'noncanonical final file symlink exits nonzero'
+check "$([[ "${linked_stderr}" == *'final symbolic-link output target'* ]] && printf true || printf false)" 'noncanonical final file symlink emits policy error'
+check "$([[ ! -e "${marker}" ]] && printf true || printf false)" 'noncanonical final file symlink does not invoke go'
+
+rm -f -- "${linked_output}" "${marker}"
+ln -s -- "${temporary_directory}/missing.json" "${linked_output}"
+: >"${stdout_path}"
+: >"${stderr_path}"
+PATH="${stub_directory}:${PATH}" bash "${wrapper}" --output "${linked_output}" >"${stdout_path}" 2>"${stderr_path}"
+broken_exit_code=$?
+broken_stderr="$(<"${stderr_path}")"
+check "$([[ ${broken_exit_code} -ne 0 ]] && printf true || printf false)" 'broken final file symlink exits nonzero'
+check "$([[ "${broken_stderr}" == *'final symbolic-link output target'* ]] && printf true || printf false)" 'broken final file symlink emits policy error'
+check "$([[ ! -e "${marker}" ]] && printf true || printf false)" 'broken final file symlink does not invoke go'
+
+rm -f -- "${linked_output}" "${marker}"
+mkdir -p -- "${fake_repository}/build"
+default_output="${fake_repository}/build/benchmark-current.linux-amd64.json"
+ln -s -- "${baseline_target}" "${default_output}"
+: >"${stdout_path}"
+: >"${stderr_path}"
+PATH="${stub_directory}:${PATH}" bash "${wrapper}" >"${stdout_path}" 2>"${stderr_path}"
+default_exit_code=$?
+default_stderr="$(<"${stderr_path}")"
+check "$([[ ${default_exit_code} -ne 0 ]] && printf true || printf false)" 'default output final symlink exits nonzero'
+check "$([[ "${default_stderr}" == *'final symbolic-link output target'* ]] && printf true || printf false)" 'default output is checked before build output'
+
+current_baseline_hash="$(sha256sum "${baseline_target}" | cut -d ' ' -f 1)"
+check "$([[ "${current_baseline_hash}" == "${baseline_hash}" ]] && printf true || printf false)" 'authoritative Linux baseline remains unchanged'
 
 if (( ${#failures[@]} == 0 )); then
   printf 'Status       : PASS\nCheckCount   : %d\nFailureCount : 0\nFailures     :\n' "${check_count}"
