@@ -13,7 +13,7 @@ Current identifiers:
 | Repository | `flashgate-mcp` |
 | Binary | `flashgate-mcp` |
 | MCP server implementation name (`serverInfo.name`) | `flashgate` |
-| Go module | `github.com/blacksheepkhan/flashgate-mcp` |
+| Go module | `github.com/thomasweidner/flashgate-mcp` |
 | Short name | FlashGate |
 
 FlashGate is not a remote-shell replacement, web-hosting service, cloud agent, or broad desktop-automation suite.

@@ -5,8 +5,8 @@
 FlashGate MCP is a resource-efficient cross-platform Model Context Protocol server for controlled filesystem, process, and operating-system operations. Deterministic work runs locally to minimize CPU, memory, latency, response size, model round trips, and token use.
 
 > Sprint 3.42 completed the technical rename. FlashGate MCP uses repository
-> `blacksheepkhan/flashgate-mcp`, module
-> `github.com/blacksheepkhan/flashgate-mcp`, binary `flashgate-mcp`, and MCP
+> `thomasweidner/flashgate-mcp`, module
+> `github.com/thomasweidner/flashgate-mcp`, binary `flashgate-mcp`, and MCP
 > server implementation name (`serverInfo.name`) `flashgate`.
 
 It exposes secure filesystem operations to MCP-compatible clients through JSON-RPC over STDIO. The server is designed for predictable behavior, low operational overhead, clear security boundaries, and maintainable enterprise-style code.
@@ -278,7 +278,7 @@ docs/
 Clone the repository:
 
 ```bash
-git clone https://github.com/blacksheepkhan/flashgate-mcp.git
+git clone https://github.com/thomasweidner/flashgate-mcp.git
 cd flashgate-mcp
 ```
 
