@@ -55,7 +55,6 @@ func TestCompletePlatformBaselineValidatorRejectsMutations(t *testing.T) {
 		want   string
 		mutate func(*Result, *Result)
 	}{
-		{"soft warning", "soft warnings", func(windows, _ *Result) { windows.BudgetEvaluation.SoftWarnings = 1 }},
 		{"warning entry", "warnings must be empty", func(windows, _ *Result) { windows.Warnings = []string{"warning"} }},
 		{"unsupported metric", "unsupported_metrics must be empty", func(windows, _ *Result) { windows.UnsupportedMetrics = []string{"user_cpu_ns"} }},
 		{"unsupported resources", "resource status", func(windows, _ *Result) { windows.Resources.Status = "unsupported" }},
@@ -167,8 +166,8 @@ func validateCompletePlatformBaseline(result Result, expectedOS string) error {
 	if result.RuntimeMode != "direct_stdio" || result.Transport != "stdio" || result.ExecutionBackend != "current_process" || result.Profile != "read_only" || result.Parallelism != 1 || result.Repetitions != expectedBaselineRepetition {
 		return fmt.Errorf("execution provenance is invalid")
 	}
-	if result.BudgetEvaluation.SchemaVersion != BudgetSchemaVersion || result.BudgetEvaluation.HardFailures != 0 || result.BudgetEvaluation.SoftWarnings != 0 || len(result.BudgetEvaluation.Messages) != 0 {
-		return fmt.Errorf("budget evaluation must contain zero hard failures, zero soft warnings, and no messages")
+	if result.BudgetEvaluation.SchemaVersion != BudgetSchemaVersion || result.BudgetEvaluation.HardFailures != 0 {
+		return fmt.Errorf("budget evaluation must contain zero hard failures")
 	}
 	if len(result.Warnings) != 0 {
 		return fmt.Errorf("warnings must be empty")
@@ -369,7 +368,6 @@ type deterministicBaselineProjection struct {
 	Starts                 []startProjection
 	ToolsList              []ToolsListMeasurement
 	Workflows              []workflowProjection
-	BudgetEvaluation       BudgetEvaluation
 	Warnings               []string
 	UnsupportedMetrics     []string
 }
@@ -399,8 +397,6 @@ func projectDeterministicBaseline(result Result) deterministicBaselineProjection
 			StderrWarningCount: measurement.WarningCount,
 		})
 	}
-	budget := result.BudgetEvaluation
-	budget.Messages = append([]string{}, result.BudgetEvaluation.Messages...)
 	return deterministicBaselineProjection{
 		SchemaVersion: result.SchemaVersion, BenchmarkSuiteVersion: result.BenchmarkSuiteVersion,
 		WorkflowCatalogVersion: result.WorkflowCatalogVersion, CorpusVersion: result.CorpusVersion,
@@ -408,7 +404,7 @@ func projectDeterministicBaseline(result Result) deterministicBaselineProjection
 		RuntimeMode: result.RuntimeMode, Transport: result.Transport, ExecutionBackend: result.ExecutionBackend,
 		Profile: result.Profile, Parallelism: result.Parallelism, Repetitions: result.Repetitions,
 		Starts: starts, ToolsList: append([]ToolsListMeasurement{}, result.ToolsList...), Workflows: workflows,
-		BudgetEvaluation: budget, Warnings: append([]string{}, result.Warnings...), UnsupportedMetrics: append([]string{}, result.UnsupportedMetrics...),
+		Warnings: append([]string{}, result.Warnings...), UnsupportedMetrics: append([]string{}, result.UnsupportedMetrics...),
 	}
 }
 

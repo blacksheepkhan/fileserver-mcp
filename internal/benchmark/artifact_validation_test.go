@@ -58,6 +58,17 @@ func TestStrictArtifactValidatorRejectsSecurityRelevantMutations(t *testing.T) {
 			},
 		},
 		{
+			name: "both platform artifacts contain the same fabricated soft evaluation", wantArtifact: "baseline.windows-amd64.json", wantCause: "budget_evaluation mismatch",
+			mutate: func(windows, linux *[]byte) {
+				mutation := func(result *Result) {
+					result.BudgetEvaluation.SoftWarnings = 1
+					result.BudgetEvaluation.Messages = []string{"soft: fabricated"}
+				}
+				*windows = mutateResultArtifact(t, *windows, mutation)
+				*linux = mutateResultArtifact(t, *linux, mutation)
+			},
+		},
+		{
 			name: "only Windows artifact changed", wantArtifact: "baseline.windows-amd64.json", wantCause: "cross-platform deterministic projection",
 			mutate: func(windows, _ *[]byte) {
 				*windows = mutateResultArtifact(t, *windows, func(result *Result) {
@@ -77,6 +88,21 @@ func TestStrictArtifactValidatorRejectsSecurityRelevantMutations(t *testing.T) {
 			name: "both platform artifacts identically exceed a hard budget", wantArtifact: "baseline.windows-amd64.json", wantCause: "budget failure",
 			mutate: func(windows, linux *[]byte) {
 				mutation := func(result *Result) { result.ToolsList[0].RequestBytes = 60 }
+				*windows = mutateResultArtifact(t, *windows, mutation)
+				*linux = mutateResultArtifact(t, *linux, mutation)
+			},
+		},
+		{
+			name: "both platform artifacts contain the same matching hard failure", wantArtifact: "baseline.windows-amd64.json", wantCause: "budget failure",
+			mutate: func(windows, linux *[]byte) {
+				mutation := func(result *Result) {
+					result.ToolsList[0].RequestBytes = 60
+					evaluation, err := EvaluateBudgets(budgetPath, *result)
+					if err != nil {
+						t.Fatal(err)
+					}
+					result.BudgetEvaluation = evaluation
+				}
 				*windows = mutateResultArtifact(t, *windows, mutation)
 				*linux = mutateResultArtifact(t, *linux, mutation)
 			},
@@ -152,6 +178,191 @@ func TestStrictArtifactValidatorRejectsSecurityRelevantMutations(t *testing.T) {
 				t.Fatalf("validator error=%v, want artifact %q and cause %q", err, tc.wantArtifact, tc.wantCause)
 			}
 		})
+	}
+}
+
+func TestPlatformArtifactSetAcceptsMatchingSoftWarnings(t *testing.T) {
+	benchmarkDirectory := filepath.Join("..", "..", "benchmarks")
+	budgetPath := filepath.Join(benchmarkDirectory, "budgets.json")
+	directory := t.TempDir()
+
+	for _, platform := range []string{"windows", "linux"} {
+		artifactPath := filepath.Join(benchmarkDirectory, "baseline."+platform+"-amd64.json")
+		result, _, err := loadValidatedBaselineArtifact(artifactPath, budgetPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		result.StartMeasurements.SubsequentProcessStart.DurationNS.P95 = 100_000_001
+		if result.StartMeasurements.SubsequentProcessStart.DurationNS.Max < 100_000_001 {
+			result.StartMeasurements.SubsequentProcessStart.DurationNS.Max = 100_000_001
+		}
+		result.BudgetEvaluation, err = EvaluateBudgets(budgetPath, result)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if result.BudgetEvaluation.HardFailures != 0 || result.BudgetEvaluation.SoftWarnings != 1 || len(result.BudgetEvaluation.Messages) != 1 || !strings.HasPrefix(result.BudgetEvaluation.Messages[0], "soft: ") {
+			t.Fatalf("%s soft evaluation=%+v, want zero hard and one soft warning", platform, result.BudgetEvaluation)
+		}
+		writeTestBaseline(t, filepath.Join(directory, "baseline."+platform+"-amd64.json"), result)
+	}
+
+	if err := validatePlatformArtifactSet(directory, budgetPath); err != nil {
+		t.Fatalf("matching recomputed soft warnings must pass the complete platform gate: %v", err)
+	}
+}
+
+func TestPlatformArtifactSetAcceptsPlatformSpecificMatchingSoftWarning(t *testing.T) {
+	benchmarkDirectory := filepath.Join("..", "..", "benchmarks")
+	budgetPath := filepath.Join(benchmarkDirectory, "budgets.json")
+	directory := t.TempDir()
+
+	for _, platform := range []string{"windows", "linux"} {
+		artifactPath := filepath.Join(benchmarkDirectory, "baseline."+platform+"-amd64.json")
+		result, _, err := loadValidatedBaselineArtifact(artifactPath, budgetPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if platform == "windows" {
+			result.StartMeasurements.SubsequentProcessStart.DurationNS.P95 = 100_000_001
+			if result.StartMeasurements.SubsequentProcessStart.DurationNS.Max < 100_000_001 {
+				result.StartMeasurements.SubsequentProcessStart.DurationNS.Max = 100_000_001
+			}
+			result.BudgetEvaluation, err = EvaluateBudgets(budgetPath, result)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.BudgetEvaluation.HardFailures != 0 || result.BudgetEvaluation.SoftWarnings != 1 {
+				t.Fatalf("Windows soft evaluation=%+v, want zero hard and one soft warning", result.BudgetEvaluation)
+			}
+		}
+		writeTestBaseline(t, filepath.Join(directory, "baseline."+platform+"-amd64.json"), result)
+	}
+
+	if err := validatePlatformArtifactSet(directory, budgetPath); err != nil {
+		t.Fatalf("platform-specific matching soft warning must pass the complete platform gate: %v", err)
+	}
+}
+
+func TestPlatformArtifactSetRejectsInvalidSoftBudgetDefinitions(t *testing.T) {
+	benchmarkDirectory := filepath.Join("..", "..", "benchmarks")
+	budgetSource := readTestArtifact(t, filepath.Join(benchmarkDirectory, "budgets.json"))
+	workflowSource := readTestArtifact(t, filepath.Join(benchmarkDirectory, "workflows.json"))
+	windowsSource := readTestArtifact(t, filepath.Join(benchmarkDirectory, "baseline.windows-amd64.json"))
+	linuxSource := readTestArtifact(t, filepath.Join(benchmarkDirectory, "baseline.linux-amd64.json"))
+
+	tests := []struct {
+		name   string
+		want   string
+		mutate func(map[string]any)
+	}{
+		{
+			name: "missing soft workflow key", want: "soft workflow p95 budgets missing key(s): initialize",
+			mutate: func(object map[string]any) {
+				_, workflows := softBudgetObjects(t, object)
+				delete(workflows, "initialize")
+			},
+		},
+		{
+			name: "unknown soft workflow key", want: "soft workflow p95 budgets unknown key(s): unexpected_workflow",
+			mutate: func(object map[string]any) {
+				_, workflows := softBudgetObjects(t, object)
+				workflows["unexpected_workflow"] = 1
+			},
+		},
+		{
+			name: "zero soft workflow limit", want: "soft workflow p95 budget initialize must be greater than zero",
+			mutate: func(object map[string]any) {
+				_, workflows := softBudgetObjects(t, object)
+				workflows["initialize"] = 0
+			},
+		},
+		{
+			name: "multiple missing soft workflow keys are sorted", want: "soft workflow p95 budgets missing key(s): initialize, read_file_small",
+			mutate: func(object map[string]any) {
+				_, workflows := softBudgetObjects(t, object)
+				delete(workflows, "read_file_small")
+				delete(workflows, "initialize")
+			},
+		},
+		{
+			name: "multiple unknown soft workflow keys are sorted", want: "soft workflow p95 budgets unknown key(s): alpha_unknown, zeta_unknown",
+			mutate: func(object map[string]any) {
+				_, workflows := softBudgetObjects(t, object)
+				workflows["zeta_unknown"] = 1
+				workflows["alpha_unknown"] = 1
+			},
+		},
+		{
+			name: "missing scalar soft limit", want: "max_system_cpu_ns: missing required field",
+			mutate: func(object map[string]any) {
+				soft, _ := softBudgetObjects(t, object)
+				delete(soft, "max_system_cpu_ns")
+			},
+		},
+	}
+	for _, field := range []string{
+		"subsequent_process_start_p95_ns",
+		"max_idle_working_set_bytes",
+		"max_peak_working_set_bytes",
+		"max_user_cpu_ns",
+		"max_system_cpu_ns",
+	} {
+		field := field
+		tests = append(tests, struct {
+			name   string
+			want   string
+			mutate func(map[string]any)
+		}{
+			name: "zero scalar soft limit " + field,
+			want: "soft budget " + field + " must be greater than zero",
+			mutate: func(object map[string]any) {
+				soft, _ := softBudgetObjects(t, object)
+				soft[field] = 0
+			},
+		})
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			directory := t.TempDir()
+			budget := mutateJSONObject(t, budgetSource, tc.mutate)
+			writeTestArtifact(t, filepath.Join(directory, "budgets.json"), budget)
+			writeTestArtifact(t, filepath.Join(directory, "workflows.json"), workflowSource)
+			writeTestArtifact(t, filepath.Join(directory, "baseline.windows-amd64.json"), windowsSource)
+			writeTestArtifact(t, filepath.Join(directory, "baseline.linux-amd64.json"), linuxSource)
+
+			err := validatePlatformArtifactSet(directory, filepath.Join(directory, "budgets.json"))
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("invalid soft budget definition error=%v, want substring %q", err, tc.want)
+			}
+		})
+	}
+}
+
+func TestPlatformArtifactSetRejectsManipulatedSoftBudgetWithDualPlatformRegression(t *testing.T) {
+	benchmarkDirectory := filepath.Join("..", "..", "benchmarks")
+	directory := t.TempDir()
+	budget := mutateJSONObject(t, readTestArtifact(t, filepath.Join(benchmarkDirectory, "budgets.json")), func(object map[string]any) {
+		_, workflows := softBudgetObjects(t, object)
+		delete(workflows, "initialize")
+	})
+	writeTestArtifact(t, filepath.Join(directory, "budgets.json"), budget)
+	writeTestArtifact(t, filepath.Join(directory, "workflows.json"), readTestArtifact(t, filepath.Join(benchmarkDirectory, "workflows.json")))
+
+	for _, platform := range []string{"windows", "linux"} {
+		artifact := mutateJSONObject(t, readTestArtifact(t, filepath.Join(benchmarkDirectory, "baseline."+platform+"-amd64.json")), func(object map[string]any) {
+			workflows := object["workflow_measurements"].([]any)
+			measurement := workflows[0].(map[string]any)
+			duration := measurement["duration_ns"].(map[string]any)
+			duration["p95"] = 100_000_001
+			duration["max"] = 100_000_001
+		})
+		writeTestArtifact(t, filepath.Join(directory, "baseline."+platform+"-amd64.json"), artifact)
+	}
+
+	err := validatePlatformArtifactSet(directory, filepath.Join(directory, "budgets.json"))
+	if err == nil || !strings.Contains(err.Error(), "soft workflow p95 budgets missing key(s): initialize") {
+		t.Fatalf("manipulated budget with dual-platform regression error=%v", err)
 	}
 }
 
@@ -238,6 +449,19 @@ func mutateJSONObject(t *testing.T, raw []byte, mutate func(map[string]any)) []b
 		t.Fatal(err)
 	}
 	return append(encoded, '\n')
+}
+
+func softBudgetObjects(t *testing.T, object map[string]any) (map[string]any, map[string]any) {
+	t.Helper()
+	soft, ok := object["soft"].(map[string]any)
+	if !ok {
+		t.Fatal("soft budget object is missing")
+	}
+	workflows, ok := soft["workflow_p95_ns"].(map[string]any)
+	if !ok {
+		t.Fatal("soft workflow budget object is missing")
+	}
+	return soft, workflows
 }
 
 func readTestArtifact(t *testing.T, path string) []byte {
