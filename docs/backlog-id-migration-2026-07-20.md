@@ -142,6 +142,25 @@ Historical migration files remain immutable. In particular, `docs/backlog-id-mig
 | BL-247 | Define and publish native Linux binary and package metadata | Inserted before artifact verification |
 | BL-324 | Configure Dependabot security and version updates | Appended after the PR #15 follow-up tasks |
 
+## Active reference treatment
+
+Active normative documents were updated directly to the new canonical IDs:
+
+- `benchmarks/README.md`
+- `docs/adr/0012-resource-token-efficiency-and-pre-1-0-contracts.md`
+- `docs/architecture.md`
+- `docs/native-multi-mode-runtime-and-service-plan.md`
+- `docs/specification.md`
+- `docs/version-1-scope-and-release-boundary.md`
+
+Dated evidence documents retain their original text and carry an appended 2026-07-20 correction section:
+
+- `docs/benchmarks/pr-15-independent-review-follow-up-2026-07-18.md`
+- `docs/benchmarks/sprint-045d-resource-latency-baseline.md`
+- `docs/comparative-mcp-review-2026-07-17.md`
+
+Earlier backlog migration records, including `docs/backlog-id-migration-2026-07-17-version1-efficiency-hybrid.md`, remain byte-for-byte unchanged.
+
 ## Validation result
 
 - Canonical IDs are continuous from `BL-001` through `BL-324`.
