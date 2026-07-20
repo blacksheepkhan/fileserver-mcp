@@ -14,38 +14,7 @@ The format follows the spirit of [Keep a Changelog](https://keepachangelog.com/)
 - Added payload-class result contracts, single-transmission rules for large content, opaque identity-bound result resources, wire-amplification metrics, profile catalog/instruction budgets, deterministic catalog fingerprints, and bounded server instructions.
 - Added Version 1.0 plans for per-principal quotas and fair scheduling, typed no-shell command definitions, native OS adapter precedence, audit lifecycle/correlation, MCP 2026 compatibility preparation, supply-chain evidence, and a pinned cross-project efficiency benchmark.
 - Added ADR-0015, Version 1.0 scope, execution-identity backend, efficiency-improvement, comparative-review, runtime/service, protocol, specification, and roadmap documentation.
-- Expanded the canonical backlog to the continuous range `BL-001` through `BL-324`; see the dated Version 1.0 efficiency/hybrid ID migration document and the PR #15 independent-review follow-up note.
-
-### Changed
-
-- CI now enforces separate repository-wide Go statement-coverage gates of 71.4% on Windows and 70.6% on Linux. The values are evaluated independently, and `summary.json` reports threshold failures consistently as `FAIL`.
-- Non-authoritative benchmark output now binds the validated parent through `os.Root`, writes and syncs an exclusive temporary file through that stable handle, and publishes with a handle-relative rename that never follows the final target; all diagnostic names, final symlinks/reparse points, protected-directory aliases, and late output/protected-directory exchanges fail closed.
-- Registered the eight Major/Minor findings deferred from the independent PR #15 review as canonical post-merge tasks `BL-316` through `BL-323` without implementing them in the blocker fix.
-- Sprint 3.45d keeps functional serialization coverage active under race while evaluating allocation budgets only without race instrumentation; legacy baseline-record flags now fail closed in favor of the authoritative two-phase prebuilt workflow.
-- Sprint 3.45d physically resolves Windows diagnostic output parents to block junction/reparse aliases into versioned baseline paths and validates both platform artifacts together across provenance, budgets, resources, process outcomes, and deterministic fields.
-- Sprint 3.45d review corrections enforce clean-only versioned baselines, complete MCP initialization with `notifications/initialized`, validate exact profile/workflow measurement sets, activate all six serialization budgets, preserve partial Linux metrics, harden host-path redaction and cleanup, and define ordinary reads as `read_bytes` without `scanned_bytes`.
-- Sprint 3.45d establishes a reproducible Windows/Linux resource, startup, latency, payload, filesystem-counter, call-count, and approximate-token benchmark baseline without changing public MCP tool contracts.
-- Existing tool-result serialization fixtures now retain their historical/text/text-plus-structured measurements while also pinning full JSON-RPC response bytes; direct `tools/call` and both `tools/list` profiles have dedicated in-process benchmarks.
-- Deterministic wire/counter regression budgets are hard local gates, while startup, latency, RSS/working-set, and CPU budgets remain soft review warnings; full CI benchmark execution and comparison stay deferred to BL-249 and BL-250.
-- Sprint 3.45b exposes runtime `outputSchema` for all eight filesystem tools, with deep parity to catalog `resultSchema` and no changes to tool names or successful domain results.
-- Sprint 3.45a wraps every successful filesystem `tools/call` result in an MCP 2025-11-25 `CallToolResult` with one compact JSON `TextContent` block and the same domain object in `structuredContent`.
-- All eight filesystem tools use one central adapter wrapper; internal filesystem and domain result types remain protocol-independent.
-- Windows and Bash positive STDIO smokes now strictly validate the outer `CallToolResult` and assert domain values through `structuredContent`.
-- The existing safe JSON-RPC tool-error contract remains unchanged; normalized `isError=true` migration stays planned under BL-203.
-- Runtime output schemas describe successful `structuredContent` only; the existing JSON-RPC error contract remains unchanged.
-- Sprint 3.44 requires an explicit absolute `MCP_ROOT`; missing, empty, whitespace-only, and general relative roots now fail closed before tool registration or JSON-RPC processing.
-- `MCP_ROOT=.` now requires the explicit lowercase `MCP_ALLOW_CWD_ROOT=true` development opt-in and emits one safe stderr warning.
-- Root startup validates existence, policy, canonical resolution, and directory type before exposing tools.
-- Codex, Claude Desktop, and general STDIO read-only activation examples now require `MCP_READ_ONLY=true` and remain preparation only.
-- Sprint 3.43 replaces the pre-1.0 filesystem tool contract with the exact baseline `list_directory`, `read_file`, `get_path_info`, `write_file`, `create_directory`, `delete_path`, `copy_path`, and `move_path`.
-- Tool arguments are decoded strictly: unknown properties, trailing JSON values, wrong types, missing required fields, and blank required paths are rejected.
-- `get_path_info` reports genuine missing paths as successful `exists:false` results, `create_directory` reports the actual `created` state, and `move_path` safely covers same-volume move and rename.
-- `copy_path` is explicitly file-only; directory copy remains planned work.
-- Repository renamed to `flashgate-mcp`; the later owner migration moved the active repository to `thomasweidner/flashgate-mcp`.
-- Go module and internal imports now use `github.com/thomasweidner/flashgate-mcp`; former owner paths remain only in historical migration context.
-- Binary renamed to `flashgate-mcp`; scripts, workflows, release artifacts, tests, and documentation updated.
-- MCP server implementation name (`serverInfo.name`) changed to `flashgate`.
-- Local project folder, clone instructions, and remote instructions updated.
+- Expanded the canonical backlog to the continuous range `BL-001` through `BL-324`; the current renumbering is documented in [Backlog ID migration - 2026-07-20](docs/backlog-id-migration-2026-07-20.md), layered over the immutable earlier migration records.
 
 ### Migration
 
@@ -142,6 +111,34 @@ The format follows the spirit of [Keep a Changelog](https://keepachangelog.com/)
 
 ### Changed
 
+- CI now enforces separate repository-wide Go statement-coverage gates of 71.4% on Windows and 70.6% on Linux. The values are evaluated independently, and `summary.json` reports threshold failures consistently as `FAIL`.
+- Non-authoritative benchmark output now binds the validated parent through `os.Root`, writes and syncs an exclusive temporary file through that stable handle, and publishes with a handle-relative rename that never follows the final target; all diagnostic names, final symlinks/reparse points, protected-directory aliases, and late output/protected-directory exchanges fail closed.
+- Registered the eight Major/Minor findings deferred from the independent PR #15 review as canonical post-merge tasks `BL-316` through `BL-323` without implementing them in the blocker fix.
+- Sprint 3.45d keeps functional serialization coverage active under race while evaluating allocation budgets only without race instrumentation; legacy baseline-record flags now fail closed in favor of the authoritative two-phase prebuilt workflow.
+- Sprint 3.45d physically resolves Windows diagnostic output parents to block junction/reparse aliases into versioned baseline paths and validates both platform artifacts together across provenance, budgets, resources, process outcomes, and deterministic fields.
+- Sprint 3.45d review corrections enforce clean-only versioned baselines, complete MCP initialization with `notifications/initialized`, validate exact profile/workflow measurement sets, activate all six serialization budgets, preserve partial Linux metrics, harden host-path redaction and cleanup, and define ordinary reads as `read_bytes` without `scanned_bytes`.
+- Sprint 3.45d establishes a reproducible Windows/Linux resource, startup, latency, payload, filesystem-counter, call-count, and approximate-token benchmark baseline without changing public MCP tool contracts.
+- Existing tool-result serialization fixtures now retain their historical/text/text-plus-structured measurements while also pinning full JSON-RPC response bytes; direct `tools/call` and both `tools/list` profiles have dedicated in-process benchmarks.
+- Deterministic wire/counter regression budgets are hard local gates, while startup, latency, RSS/working-set, and CPU budgets remain soft review warnings; full CI benchmark execution and comparison stay deferred to BL-249 and BL-250.
+- Sprint 3.45b exposes runtime `outputSchema` for all eight filesystem tools, with deep parity to catalog `resultSchema` and no changes to tool names or successful domain results.
+- Sprint 3.45a wraps every successful filesystem `tools/call` result in an MCP 2025-11-25 `CallToolResult` with one compact JSON `TextContent` block and the same domain object in `structuredContent`.
+- All eight filesystem tools use one central adapter wrapper; internal filesystem and domain result types remain protocol-independent.
+- Windows and Bash positive STDIO smokes now strictly validate the outer `CallToolResult` and assert domain values through `structuredContent`.
+- The existing safe JSON-RPC tool-error contract remains unchanged; normalized `isError=true` migration stays planned under BL-203.
+- Runtime output schemas describe successful `structuredContent` only; the existing JSON-RPC error contract remains unchanged.
+- Sprint 3.44 requires an explicit absolute `MCP_ROOT`; missing, empty, whitespace-only, and general relative roots now fail closed before tool registration or JSON-RPC processing.
+- `MCP_ROOT=.` now requires the explicit lowercase `MCP_ALLOW_CWD_ROOT=true` development opt-in and emits one safe stderr warning.
+- Root startup validates existence, policy, canonical resolution, and directory type before exposing tools.
+- Codex, Claude Desktop, and general STDIO read-only activation examples now require `MCP_READ_ONLY=true` and remain preparation only.
+- Sprint 3.43 replaces the pre-1.0 filesystem tool contract with the exact baseline `list_directory`, `read_file`, `get_path_info`, `write_file`, `create_directory`, `delete_path`, `copy_path`, and `move_path`.
+- Tool arguments are decoded strictly: unknown properties, trailing JSON values, wrong types, missing required fields, and blank required paths are rejected.
+- `get_path_info` reports genuine missing paths as successful `exists:false` results, `create_directory` reports the actual `created` state, and `move_path` safely covers same-volume move and rename.
+- `copy_path` is explicitly file-only; directory copy remains planned work.
+- Repository renamed to `flashgate-mcp`; the later owner migration moved the active repository to `thomasweidner/flashgate-mcp`.
+- Go module and internal imports now use `github.com/thomasweidner/flashgate-mcp`; former owner paths remain only in historical migration context.
+- Binary renamed to `flashgate-mcp`; scripts, workflows, release artifacts, tests, and documentation updated.
+- MCP server implementation name (`serverInfo.name`) changed to `flashgate`.
+- Local project folder, clone instructions, and remote instructions updated.
 - Public project name changed from Fileserver MCP to FlashGate MCP; the technical repository, module, binary, MCP server implementation name (`serverInfo.name`), scripts, workflows, and catalog remain unchanged until Sprint 3.42.
 - Backlog consolidated into one canonical continuously numbered task catalog without a separate `BL-D` series.
 - Former Sprint 3.41 Codex read-only preparation shifted to Sprint 3.44.
