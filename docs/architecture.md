@@ -39,7 +39,7 @@ FlashGate is not a remote-shell replacement, web-hosting service, cloud agent, o
 
 - `Planned` tasks are required for Version 1.0;
 - `Later` tasks are accepted post-Version-1.0 work;
-- Version 1.0 release requires the explicit gate in `BL-261`.
+- Version 1.0 release requires the explicit gate in `BL-263`.
 
 See [Version 1.0 Scope and Release Boundary](version-1-scope-and-release-boundary.md).
 
