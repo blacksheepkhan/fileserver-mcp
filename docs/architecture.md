@@ -457,6 +457,24 @@ Version 1.0 release evidence includes:
 - atomic update/rollback guidance;
 - direct/proxy/service and cross-project benchmark artifacts.
 
+### Build identity and native metadata
+
+`internal/version` is the canonical runtime build-information model.
+Controlled builds resolve SemVer, numeric Windows file version, commit,
+canonical source time, modified state, Go toolchain, target, and public
+architecture once and inject the same values into CLI output, platform
+metadata, and a statically inspectable in-binary build manifest.
+
+Windows builds generate a temporary architecture-specific `.syso` resource
+through `cmd/versioninfo`, then remove it on success or failure. Linux retains
+standard Go/VCS information and Go/ELF build IDs. Static manifest and
+normalized icon-frame validation are repository build tools, not runtime
+dependencies. Deterministic ZIP or TAR.GZ construction, exact-content/type
+verification, checksums, two-build comparison, and leak checks are build-time
+concerns and add no runtime interpreter dependency.
+
+See [Build and release metadata](build-and-release-metadata.md) and [File and product metadata decisions](decisions/file-and-product-metadata-decisions.md).
+
 ## Open-source, providers, and protocol extensions
 
 The Version 1.0 core remains vendor neutral and cannot depend on Voxtronic paths, secrets, product permissions, proprietary dependencies, or internal infrastructure.

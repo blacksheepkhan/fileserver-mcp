@@ -498,6 +498,33 @@ Version 1.0 requires:
 - no silent automatic update;
 - public security policy and supported-version statement.
 
+Build identity is provenance metadata, not a code signature. Release mode
+fails closed unless the exact version tag is checked out and the tree is
+clean. Controlled builds use canonical source time and `-trimpath`. Every
+release matrix path performs two independent builds and rejects differing
+binary, archive, checksum, or inventory hashes before upload. A
+machine-readable pre-upload scan rejects workspace/home/temp/repository paths,
+supplied usernames and hostnames, GitHub/AWS credential shapes,
+credential-bearing URLs, and complete private-key blocks in the produced
+binaries and all archive files. Bare private-key header literals used by
+redaction code are narrowly reported as allowed markers rather than hidden.
+
+Windows and Linux binaries contain the same static canonical build manifest.
+Validation binds version, full commit, source time, modified state, GOOS,
+GOARCH and public architecture directly to the binary. Windows ARM64 therefore
+has an equivalent static provenance gate without relying on native execution
+or an unauthenticated sidecar.
+
+Native WSL validation accepts only a restricted direct-child run ID below the
+canonical `$HOME/.cache/flashgate-mcp-validation` base. Creation and recursive
+cleanup reject symbolic links and descriptor identity changes. Source
+snapshots are made from explicit Git tracked/nonignored-untracked inventory;
+ignored sensitive names, reparse points, links and special files fail closed.
+The native extractor rejects traversal, duplicate names, links and special TAR
+types, then verifies every extracted length and SHA-256 against the manifest.
+
+The vendored Windows resource generator and committed icon source are covered by dependency inventory and third-party notices. Generated `.syso` files are temporary, ignored, rejected when stale, and removed on every build exit path.
+
 ## Threat Model Workstreams
 
 | Workstream | Minimum concerns |

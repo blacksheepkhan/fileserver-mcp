@@ -13,7 +13,7 @@ It exposes secure filesystem operations to MCP-compatible clients through JSON-R
 
 ## Status
 
-The project currently implements the core MCP server loop, JSON-RPC routing and request validation, tool discovery, tool execution, MCP-conformant `CallToolResult` wrapping, filesystem abstraction, root-confined path handling, read-only tool gating, reproducible resource/latency/payload benchmarks, tests, and documentation.
+The project currently implements the core MCP server loop, JSON-RPC routing and request validation, tool discovery, tool execution, MCP-conformant `CallToolResult` wrapping, filesystem abstraction, root-confined path handling, read-only tool gating, canonical build identity, native Windows/Linux metadata, deterministic release archives, reproducible resource/latency/payload benchmarks, tests, and documentation.
 
 The current implemented scope is filesystem operations. Version 1.0 plans bounded search, process observation/management, typed allowlisted command execution, controlled system information, named roots, safe-default capability profiles, the Operations/Job Manager, payload-efficient large-result handling, and optional local system-service deployment. These remain planned work.
 
@@ -298,6 +298,15 @@ On Windows, the common build command is:
 go build -o build/flashgate-mcp.exe ./cmd/server
 ```
 
+Direct `go build` is intended for development. Controlled metadata and release builds use `scripts/build.ps1` or `scripts/build.sh`; see [Build and release metadata](docs/build-and-release-metadata.md).
+
+Version identity is available without starting the MCP STDIO loop:
+
+```text
+flashgate-mcp --version
+flashgate-mcp --version --verbose
+```
+
 ## Testing and Quality Checks
 
 Run the documentation consistency gate with PowerShell 7.6.3:
@@ -445,43 +454,20 @@ Versioned baselines are recorded only from clean isolated checkouts of the same 
 
 ## Release Builds
 
-The repository contains a manual GitHub Actions workflow for release builds:
+Release tags use `v<SemVer>`. The leading `v` belongs to the Git tag but is not embedded in product versions or artifact names. Release mode requires the exact tag and a clean tree; local integration validation may use an explicit SemVer and records `Modified: true`.
+
+The tag-gated `.github/workflows/release-build.yml` workflow builds and validates:
 
 ```text
-.github/workflows/release-build.yml
+flashgate-mcp_<version>_windows_x64.zip
+flashgate-mcp_<version>_windows_arm64.zip
+flashgate-mcp_<version>_linux_x64.tar.gz
+flashgate-mcp_<version>_linux_arm64.tar.gz
 ```
 
-The workflow can be started from GitHub:
+Each archive has a sibling `.sha256` file and exactly one top-level directory containing the platform binary, `LICENSE`, `README.md`, and `THIRD-PARTY-NOTICES.md`. Windows artifacts carry `VERSIONINFO`, an embedded machine-readable build manifest, and the canonical FlashGate icon; Linux artifacts carry matching CLI, embedded-manifest, Go/VCS, ELF architecture, and Go build-ID metadata. Before upload, every matrix path builds independently twice, validates metadata and exact archive contents, compares binary, archive, checksum-file, and inventory identities, and performs a machine-readable host/credential leak scan.
 
-```text
-Actions → Release Build → Run workflow
-```
-
-The workflow accepts an optional version label. This value is embedded into the generated binaries and shown by the `--version` command.
-
-Release builds currently produce the following artifacts:
-
-```text
-flashgate-mcp-linux-amd64
-flashgate-mcp-windows-amd64
-```
-
-Artifacts are uploaded by GitHub Actions and can be downloaded from the completed workflow run.
-
-Release binaries are built with:
-
-```text
--trimpath
--ldflags="-s -w"
-```
-
-The release workflow also embeds build metadata through linker flags:
-
-```text
-version
-commit
-date
-```
+Detailed build inputs, architecture naming, reproducibility rules, local commands, and manual Explorer validation are documented in [Build and release metadata](docs/build-and-release-metadata.md) and [Manual metadata validation](docs/manual-metadata-validation.md).
 
 ## Basic Usage
 

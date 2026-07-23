@@ -36,5 +36,5 @@ build/
 # Environment
 .env
 
-# Vendor (only if used)
-vendor/
+# Generated Windows resources
+cmd/server/resource_windows_*.syso
