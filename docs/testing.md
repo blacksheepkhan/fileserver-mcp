@@ -279,6 +279,20 @@ Before Version 1.0, publish and test the supported MCP revision matrix:
 ### Release and supply-chain tests
 
 - artifact version/help/platform/name checks;
+- compact and verbose CLI identity checks;
+- Windows x64/ARM64 `VERSIONINFO`, PE architecture, icon, and Explorer property checks;
+- Linux x64 native and ARM64 cross-build Go/VCS, ELF-header, ELF-note, and Go build-ID checks;
+- exact ZIP/TAR.GZ inventory and SHA-256 verification;
+- repeated byte-for-byte binary and archive reproducibility checks;
+- host-path, username, hostname, and credential-shaped-value leak checks;
+- shared Go/PowerShell/Bash SemVer and `SOURCE_DATE_EPOCH` fixtures;
+- fail-closed Git snapshot inventory, ignored/sensitive-file, TAR traversal,
+  link, special-type, duplicate, missing, length, and hash fixtures;
+- descriptor-bound native work-root traversal, symlink, component-exchange,
+  length, and whitespace fixtures;
+- static canonical build-manifest validation on all four targets;
+- normalized embedded-icon frame identity and manipulation fixtures;
+- regular-clone, linked-worktree, nonrepository, and damaged-Git fixtures;
 - no interpreter runtime dependency;
 - service asset syntax and install/remove dry validation;
 - checksums;
@@ -288,6 +302,13 @@ Before Version 1.0, publish and test the supported MCP revision matrix:
 - reproducible-build comparison;
 - pinned/validated workflow policy;
 - atomic rollback documentation and smoke procedure.
+
+The controlled commands and expected fields are documented in [Build and
+release metadata](build-and-release-metadata.md) and [Manual metadata
+validation](manual-metadata-validation.md). Native Linux validation verifies a
+manifest-bound Git inventory in a new controlled extraction directory before
+copying it into an ext4 clone under `/home`; Windows-mounted paths are
+orchestration inputs only and are never the native build directory.
 
 ### Cross-project benchmark
 

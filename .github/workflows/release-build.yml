@@ -1,35 +1,102 @@
 name: Release Build
 
 on:
+  push:
+    tags:
+      - 'v*.*.*'
   workflow_dispatch:
     inputs:
       version:
-        description: Release version label
-        required: false
-        default: manual
+        description: Semantic release version without leading v
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            artifact_name: flashgate-mcp-linux-amd64
-            output_path: build/flashgate-mcp-linux-amd64
-          - os: windows-latest
-            artifact_name: flashgate-mcp-windows-amd64
-            output_path: build/flashgate-mcp-windows-amd64.exe
+  prepare:
+    name: Validate release source
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      source_epoch: ${{ steps.release.outputs.source_epoch }}
+      source_time: ${{ steps.release.outputs.source_time }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Resolve and validate release values
+        id: release
+        shell: bash
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -Eeuo pipefail
+
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="$REQUESTED_VERSION"
+          fi
+
+          source scripts/build-input-validation.sh
+          flashgate_validate_semver "$version"
+
+          exact_tag="$(git describe --tags --exact-match HEAD)"
+          [[ "$exact_tag" == "v$version" ]]
+          [[ -z "$(git status --porcelain=v1 --untracked-files=normal)" ]]
+
+          source_epoch="$(git show -s --format=%ct HEAD)"
+          flashgate_validate_source_date_epoch "$source_epoch"
+          source_time="$(date -u -d "@$source_epoch" '+%Y-%m-%dT%H:%M:%SZ')"
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "source_epoch=$source_epoch" >> "$GITHUB_OUTPUT"
+          echo "source_time=$source_time" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: ${{ matrix.platform }} ${{ matrix.public_arch }}
+    needs: prepare
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            goarch: amd64
+            public_arch: x64
+            archive_extension: zip
+          - os: windows-latest
+            platform: windows
+            goarch: arm64
+            public_arch: arm64
+            archive_extension: zip
+          - os: ubuntu-latest
+            platform: linux
+            goarch: amd64
+            public_arch: x64
+            archive_extension: tar.gz
+          - os: ubuntu-latest
+            platform: linux
+            goarch: arm64
+            public_arch: arm64
+            archive_extension: tar.gz
+
+    env:
+      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+      SOURCE_DATE_EPOCH: ${{ needs.prepare.outputs.source_epoch }}
+      RELEASE_SOURCE_TIME: ${{ needs.prepare.outputs.source_time }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -37,39 +104,199 @@ jobs:
           go-version-file: go.mod
           cache: false
 
-      - name: Test
-        run: go test ./...
+      - name: Install Linux inspection tools
+        if: matrix.platform == 'linux'
+        run: sudo apt-get update && sudo apt-get install --yes binutils file
 
-      - name: Set build date
-        id: build_date
+      - name: Validate shared build-input fixtures
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: ./scripts/Test-BuildInputValidation.ps1
+
+      - name: Validate shared build-input fixtures
+        if: matrix.platform == 'linux'
         shell: bash
-        run: echo "date=$(date -u '+%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
+        run: bash scripts/test-build-input-validation.sh
 
-      - name: Build
+      - name: Create Windows release artifact (build 1)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          ./scripts/New-ReleaseArtifact.ps1 `
+            -Version $env:RELEASE_VERSION `
+            -GOARCH '${{ matrix.goarch }}' `
+            -OutputDirectory build/release-1 `
+            -Release
+
+      - name: Validate Windows release artifact
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $year = [DateTimeOffset]::FromUnixTimeSeconds(
+            [int64]$env:SOURCE_DATE_EPOCH
+          ).Year
+          $base = "flashgate-mcp_$($env:RELEASE_VERSION)_windows_${{ matrix.public_arch }}"
+          ./scripts/Test-ReleaseArtifact.ps1 `
+            -ArchivePath "build/release-1/$base.zip" `
+            -ChecksumPath "build/release-1/$base.zip.sha256" `
+            -ExpectedVersion $env:RELEASE_VERSION `
+            -ExpectedPublicArch '${{ matrix.public_arch }}' `
+            -ExpectedGOARCH '${{ matrix.goarch }}' `
+            -ExpectedPlatform windows `
+            -ExpectedCommit '${{ github.sha }}' `
+            -ExpectedSourceTime $env:RELEASE_SOURCE_TIME `
+            -ExpectedModified false `
+            -ExpectedCopyrightYear $year
+
+      - name: Create Linux release artifact (build 1)
+        if: matrix.platform == 'linux'
         shell: bash
         run: |
-          go build \
-            -trimpath \
-            -ldflags="-s -w -X github.com/thomasweidner/flashgate-mcp/internal/version.version=${{ inputs.version }} -X github.com/thomasweidner/flashgate-mcp/internal/version.commit=${{ github.sha }} -X github.com/thomasweidner/flashgate-mcp/internal/version.date=${{ steps.build_date.outputs.date }}" \
-            -o "${{ matrix.output_path }}" \
-            ./cmd/server
+          bash scripts/new-release-artifact.sh \
+            --version "$RELEASE_VERSION" \
+            --goarch '${{ matrix.goarch }}' \
+            --output-directory build/release-1 \
+            --release
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v6
+      - name: Validate Linux release artifact
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          base="flashgate-mcp_${RELEASE_VERSION}_linux_${{ matrix.public_arch }}"
+          bash scripts/test-release-artifact.sh \
+            --archive "build/release-1/${base}.tar.gz" \
+            --checksum "build/release-1/${base}.tar.gz.sha256" \
+            --expected-version "$RELEASE_VERSION" \
+            --expected-public-arch '${{ matrix.public_arch }}' \
+            --expected-goarch '${{ matrix.goarch }}' \
+            --expected-commit '${{ github.sha }}' \
+            --expected-source-time "$RELEASE_SOURCE_TIME" \
+            --expected-modified false
+
+      - name: Create Windows release artifact (build 2)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          ./scripts/New-ReleaseArtifact.ps1 `
+            -Version $env:RELEASE_VERSION `
+            -GOARCH '${{ matrix.goarch }}' `
+            -OutputDirectory build/release-2 `
+            -Release
+
+      - name: Create Linux release artifact (build 2)
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          bash scripts/new-release-artifact.sh \
+            --version "$RELEASE_VERSION" \
+            --goarch '${{ matrix.goarch }}' \
+            --output-directory build/release-2 \
+            --release
+
+      - name: Compare Windows release reproductions
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $base = "flashgate-mcp_$($env:RELEASE_VERSION)_windows_${{ matrix.public_arch }}"
+          $null = New-Item -ItemType Directory -Path build/audit -Force
+          & go -C . run -mod=vendor ./cmd/releaseaudit compare `
+            --artifact-a "build/release-1/$base.zip" `
+            --checksum-a "build/release-1/$base.zip.sha256" `
+            --artifact-b "build/release-2/$base.zip" `
+            --checksum-b "build/release-2/$base.zip.sha256" `
+            --binary-suffix /flashgate-mcp.exe `
+            --report "build/audit/repro-windows-${{ matrix.public_arch }}.json"
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Windows release reproducibility gate failed.'
+          }
+
+      - name: Compare Linux release reproductions
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          base="flashgate-mcp_${RELEASE_VERSION}_linux_${{ matrix.public_arch }}"
+          mkdir -p build/audit
+          go -C . run -mod=vendor ./cmd/releaseaudit compare \
+            --artifact-a "build/release-1/${base}.tar.gz" \
+            --checksum-a "build/release-1/${base}.tar.gz.sha256" \
+            --artifact-b "build/release-2/${base}.tar.gz" \
+            --checksum-b "build/release-2/${base}.tar.gz.sha256" \
+            --binary-suffix /flashgate-mcp \
+            --report "build/audit/repro-linux-${{ matrix.public_arch }}.json"
+
+      - name: Leak-scan Windows release
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $base = "flashgate-mcp_$($env:RELEASE_VERSION)_windows_${{ matrix.public_arch }}"
+          $arguments = @(
+            '-C', '.', 'run', '-mod=vendor', './cmd/releaseaudit',
+            'scan',
+            '--artifact', "build/release-1/$base.zip",
+            '--checksum', "build/release-1/$base.zip.sha256",
+            '--report', "build/audit/leak-windows-${{ matrix.public_arch }}.json"
+          )
+          foreach ($value in @(
+            $env:GITHUB_WORKSPACE,
+            $env:RUNNER_TEMP,
+            $env:USERPROFILE,
+            $env:USERNAME,
+            $env:COMPUTERNAME
+          )) {
+            if (-not [string]::IsNullOrWhiteSpace($value)) {
+              $arguments += @('--forbidden', $value)
+            }
+          }
+          & go @arguments
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Windows release leak scan failed.'
+          }
+
+      - name: Leak-scan Linux release
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          base="flashgate-mcp_${RELEASE_VERSION}_linux_${{ matrix.public_arch }}"
+          arguments=(
+            -C . run -mod=vendor ./cmd/releaseaudit
+            scan
+            --artifact "build/release-1/${base}.tar.gz"
+            --checksum "build/release-1/${base}.tar.gz.sha256"
+            --report "build/audit/leak-linux-${{ matrix.public_arch }}.json"
+          )
+          for value in \
+            "$GITHUB_WORKSPACE" \
+            "$RUNNER_TEMP" \
+            "$HOME" \
+            "$USER" \
+            "$(hostname)"; do
+            [[ -z "$value" ]] || arguments+=(--forbidden "$value")
+          done
+          go "${arguments[@]}"
+
+      - name: Upload validated release artifact
+        uses: actions/upload-artifact@v7
         with:
-          name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.output_path }}
+          name: flashgate-mcp-${{ needs.prepare.outputs.version }}-${{ matrix.platform }}-${{ matrix.public_arch }}
+          path: |
+            build/release-1/flashgate-mcp_${{ needs.prepare.outputs.version }}_${{ matrix.platform }}_${{ matrix.public_arch }}.${{ matrix.archive_extension }}
+            build/release-1/flashgate-mcp_${{ needs.prepare.outputs.version }}_${{ matrix.platform }}_${{ matrix.public_arch }}.${{ matrix.archive_extension }}.sha256
+            build/audit/repro-${{ matrix.platform }}-${{ matrix.public_arch }}.json
+            build/audit/leak-${{ matrix.platform }}-${{ matrix.public_arch }}.json
           if-no-files-found: error
           retention-days: 30
 
-      - name: Write build summary
+      - name: Write release summary
         shell: bash
         run: |
-          echo "## Release artifact" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Validated release artifact" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Artifact: \`${{ matrix.artifact_name }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Path: \`${{ matrix.output_path }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Version: \`${{ inputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Version: \`$RELEASE_VERSION\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Platform: \`${{ matrix.platform }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Architecture: \`${{ matrix.public_arch }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Commit: \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Build date: \`${{ steps.build_date.outputs.date }}\`" >> "$GITHUB_STEP_SUMMARY"
-
+          echo "- Source time: \`$RELEASE_SOURCE_TIME\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Reproducibility gate: \`PASS\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Leak scan: \`PASS\`" >> "$GITHUB_STEP_SUMMARY"

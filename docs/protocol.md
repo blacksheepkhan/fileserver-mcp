@@ -18,6 +18,8 @@ The current server:
 - exposes successful `outputSchema` definitions for the current eight tools;
 - retains safe generic JSON-RPC errors for current tool failures.
 
+`flashgate-mcp --version` and `flashgate-mcp --version --verbose` are pre-protocol CLI exits. They print build identity and terminate before reading MCP input. During normal server operation, stdout remains reserved exclusively for JSON-RPC protocol messages.
+
 ## Version 1.0 runtime transports
 
 The same native binary supports four public roles:

@@ -26,6 +26,7 @@ func TestRunCLIHelp(t *testing.T) {
 		"flashgate-mcp",
 		"Usage:",
 		"flashgate-mcp --version",
+		"flashgate-mcp --version --verbose",
 		"flashgate-mcp --help",
 		"MCP_ROOT",
 	}
@@ -68,17 +69,40 @@ func TestRunCLIVersion(t *testing.T) {
 		t.Fatalf("expected exit code 0, got %d", exitCode)
 	}
 
+	if output := stdout.String(); output != "flashgate-mcp 0.0.0-dev\n" {
+		t.Fatalf("unexpected version output %q", output)
+	}
+}
+
+func TestRunCLIVerboseVersion(t *testing.T) {
+	var stdout bytes.Buffer
+
+	exitCode, err := runCLI(context.Background(), []string{"--version", "--verbose"}, &stdout, failIfServerRuns(t))
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if exitCode != 0 {
+		t.Fatalf("expected exit code 0, got %d", exitCode)
+	}
+
 	output := stdout.String()
 	expectedParts := []string{
-		"flashgate-mcp",
-		"version:",
-		"commit:",
-		"date:",
+		"Product:",
+		"Version:",
+		"File version:",
+		"Commit:",
+		"Source time:",
+		"Modified:",
+		"Go version:",
+		"Platform:",
+		"Go target:",
 	}
 
 	for _, part := range expectedParts {
 		if !strings.Contains(output, part) {
-			t.Fatalf("expected version output to contain %q, got %q", part, output)
+			t.Fatalf("expected verbose output to contain %q, got %q", part, output)
 		}
 	}
 }
@@ -112,10 +136,36 @@ func TestRunCLIUnknownArgument(t *testing.T) {
 	}
 }
 
+func TestRunCLIUnsupportedArgumentCombination(t *testing.T) {
+	var stdout bytes.Buffer
+
+	exitCode, err := runCLI(context.Background(), []string{"--verbose", "--version"}, &stdout, failIfServerRuns(t))
+
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	if !errors.Is(err, errInvalidCLIArguments) {
+		t.Fatalf("expected errInvalidCLIArguments, got %v", err)
+	}
+
+	if exitCode != 2 {
+		t.Fatalf("expected exit code 2, got %d", exitCode)
+	}
+
+	if !strings.Contains(err.Error(), "unsupported argument combination") {
+		t.Fatalf("expected unsupported combination error, got %v", err)
+	}
+
+	if stdout.Len() != 0 {
+		t.Fatalf("expected no stdout output, got %q", stdout.String())
+	}
+}
+
 func TestRunCLITooManyArguments(t *testing.T) {
 	var stdout bytes.Buffer
 
-	exitCode, err := runCLI(context.Background(), []string{"--help", "--version"}, &stdout, failIfServerRuns(t))
+	exitCode, err := runCLI(context.Background(), []string{"--help", "--version", "--verbose"}, &stdout, failIfServerRuns(t))
 
 	if err == nil {
 		t.Fatal("expected error")

@@ -127,6 +127,16 @@ Every security-relevant request records a safe correlation chain across client, 
 
 Release evidence includes Windows/Linux assets, checksums, dependency inventory, SBOM, provenance, signing plan and available signatures, reproducibility comparison or limitations, service assets, installation/removal/rollback instructions, and no silent automatic update.
 
+Current native artifact identity uses one canonical
+SemVer/build-information model and an equivalent statically inspectable build
+manifest in all binaries. Windows x64/ARM64 binaries expose `VERSIONINFO` and
+the exact committed application icon; Linux x64/ARM64 binaries expose matching
+CLI, Go/VCS, ELF architecture, and Go build-ID metadata. Release archives use
+public `x64`/`arm64` names, exact documented regular-file/directory types, and
+sibling SHA-256 files. Upload requires independent two-build reproduction and
+a machine-readable leak scan. `.deb`, `.rpm`, and systemd metadata remain
+deferred until those distribution assets are approved.
+
 ## Version 1.0 exclusions
 
 Version 1.0 does not implement:

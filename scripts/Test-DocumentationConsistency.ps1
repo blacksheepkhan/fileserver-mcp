@@ -240,7 +240,7 @@ try {
 
     if ($catalogIndex -ge 0) {
         $catalogText = $backlogText.Substring($catalogIndex)
-        $taskMatches = [regex]::Matches($catalogText, '(?m)^\|\s*(?<id>BL-\d{3})\s*\|\s*(?<status>Done|Planned|Later|Ready|Blocked)\s*\|')
+        $taskMatches = [regex]::Matches($catalogText, '(?m)^\|\s*(?<id>BL-\d{3})\s*\|\s*(?<status>Done|In Progress|Planned|Later|Ready|Blocked)\s*\|')
         $taskDefinitions = @($taskMatches | ForEach-Object {
                 [pscustomobject]@{
                     Id     = $_.Groups['id'].Value

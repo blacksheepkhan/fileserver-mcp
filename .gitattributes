@@ -1,0 +1,4 @@
+*.sh text eol=lf
+
+# Preserve the vendored upstream license bytes while treating CRLF as a valid line ending.
+vendor/github.com/akavel/rsrc/LICENSE.txt -text whitespace=cr-at-eol

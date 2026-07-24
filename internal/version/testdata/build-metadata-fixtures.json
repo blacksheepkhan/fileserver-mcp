@@ -1,0 +1,79 @@
+{
+  "schema": "flashgate-build-metadata-fixtures/v1",
+  "fixtures": [
+    {
+      "name": "stable",
+      "version": "1.2.3",
+      "fileVersion": "1.2.3.0",
+      "compact": "flashgate-mcp 1.2.3",
+      "releaseArtifacts": true,
+      "targets": [
+        {
+          "goos": "windows",
+          "goarch": "amd64",
+          "publicArch": "x64",
+          "archive": "flashgate-mcp_1.2.3_windows_x64.zip"
+        },
+        {
+          "goos": "windows",
+          "goarch": "arm64",
+          "publicArch": "arm64",
+          "archive": "flashgate-mcp_1.2.3_windows_arm64.zip"
+        },
+        {
+          "goos": "linux",
+          "goarch": "amd64",
+          "publicArch": "x64",
+          "archive": "flashgate-mcp_1.2.3_linux_x64.tar.gz"
+        },
+        {
+          "goos": "linux",
+          "goarch": "arm64",
+          "publicArch": "arm64",
+          "archive": "flashgate-mcp_1.2.3_linux_arm64.tar.gz"
+        }
+      ]
+    },
+    {
+      "name": "prerelease",
+      "version": "1.2.3-rc.1",
+      "fileVersion": "1.2.3.0",
+      "compact": "flashgate-mcp 1.2.3-rc.1",
+      "releaseArtifacts": true,
+      "targets": [
+        {
+          "goos": "windows",
+          "goarch": "amd64",
+          "publicArch": "x64",
+          "archive": "flashgate-mcp_1.2.3-rc.1_windows_x64.zip"
+        },
+        {
+          "goos": "windows",
+          "goarch": "arm64",
+          "publicArch": "arm64",
+          "archive": "flashgate-mcp_1.2.3-rc.1_windows_arm64.zip"
+        },
+        {
+          "goos": "linux",
+          "goarch": "amd64",
+          "publicArch": "x64",
+          "archive": "flashgate-mcp_1.2.3-rc.1_linux_x64.tar.gz"
+        },
+        {
+          "goos": "linux",
+          "goarch": "arm64",
+          "publicArch": "arm64",
+          "archive": "flashgate-mcp_1.2.3-rc.1_linux_arm64.tar.gz"
+        }
+      ]
+    },
+    {
+      "name": "development",
+      "version": "0.0.0-dev",
+      "fileVersion": "0.0.0.0",
+      "compact": "flashgate-mcp 0.0.0-dev",
+      "releaseArtifacts": false,
+      "targets": []
+    }
+  ]
+}

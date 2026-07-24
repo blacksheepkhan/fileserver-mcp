@@ -39,6 +39,12 @@ func runCLI(ctx context.Context, args []string, stdout io.Writer, runServer serv
 		default:
 			return 2, fmt.Errorf("%w: unknown argument\nUse --help for usage.", errInvalidCLIArguments)
 		}
+	case 2:
+		if args[0] == "--version" && args[1] == "--verbose" {
+			_, _ = fmt.Fprintln(stdout, version.Get().VerboseString())
+			return 0, nil
+		}
+		return 2, fmt.Errorf("%w: unsupported argument combination\nUse --help for usage.", errInvalidCLIArguments)
 	default:
 		return 2, fmt.Errorf("%w: too many arguments\nUse --help for usage.", errInvalidCLIArguments)
 	}
@@ -50,6 +56,7 @@ func helpText() string {
 Usage:
   flashgate-mcp
   flashgate-mcp --version
+  flashgate-mcp --version --verbose
   flashgate-mcp --help
 
 Environment:

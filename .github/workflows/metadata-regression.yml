@@ -1,0 +1,248 @@
+name: Metadata Regression
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  METADATA_TEST_VERSION: 1.2.3-rc.1
+  METADATA_TEST_FILE_VERSION: 1.2.3.0
+
+jobs:
+  windows-metadata:
+    name: Windows metadata (${{ matrix.public_arch }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goarch: amd64
+            public_arch: x64
+          - goarch: arm64
+            public_arch: arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Resolve canonical source values
+        id: source
+        shell: pwsh
+        run: |
+          $epoch = (git show -s --format=%ct HEAD).Trim()
+          $year = [DateTimeOffset]::FromUnixTimeSeconds([int64]$epoch).Year
+          $time = [DateTimeOffset]::FromUnixTimeSeconds(
+            [int64]$epoch
+          ).UtcDateTime.ToString('yyyy-MM-ddTHH:mm:ssZ')
+          "epoch=$epoch" >> $env:GITHUB_OUTPUT
+          "time=$time" >> $env:GITHUB_OUTPUT
+          "year=$year" >> $env:GITHUB_OUTPUT
+
+      - name: Validate shared build-input fixtures
+        shell: pwsh
+        run: ./scripts/Test-BuildInputValidation.ps1
+
+      - name: Build Windows binary with metadata (build 1)
+        shell: pwsh
+        env:
+          SOURCE_DATE_EPOCH: ${{ steps.source.outputs.epoch }}
+        run: |
+          ./scripts/build.ps1 `
+            -GOOS windows `
+            -GOARCH '${{ matrix.goarch }}' `
+            -Version $env:METADATA_TEST_VERSION `
+            -OutputPath "build/metadata-1/windows_${{ matrix.public_arch }}/flashgate-mcp.exe"
+
+      - name: Validate Windows metadata
+        shell: pwsh
+        run: |
+          ./scripts/Test-WindowsMetadata.ps1 `
+            -BinaryPath "build/metadata-1/windows_${{ matrix.public_arch }}/flashgate-mcp.exe" `
+            -ExpectedProductVersion $env:METADATA_TEST_VERSION `
+            -ExpectedFileVersion $env:METADATA_TEST_FILE_VERSION `
+            -ExpectedPublicArch '${{ matrix.public_arch }}' `
+            -ExpectedGOARCH '${{ matrix.goarch }}' `
+            -ExpectedCommit '${{ github.sha }}' `
+            -ExpectedSourceTime '${{ steps.source.outputs.time }}' `
+            -ExpectedModified false `
+            -ExpectedCopyrightYear ${{ steps.source.outputs.year }}
+
+      - name: Build Windows binary with metadata (build 2)
+        shell: pwsh
+        env:
+          SOURCE_DATE_EPOCH: ${{ steps.source.outputs.epoch }}
+        run: |
+          ./scripts/build.ps1 `
+            -GOOS windows `
+            -GOARCH '${{ matrix.goarch }}' `
+            -Version $env:METADATA_TEST_VERSION `
+            -OutputPath "build/metadata-2/windows_${{ matrix.public_arch }}/flashgate-mcp.exe"
+
+      - name: Compare and leak-scan Windows metadata binary
+        shell: pwsh
+        run: |
+          $first = "build/metadata-1/windows_${{ matrix.public_arch }}/flashgate-mcp.exe"
+          $second = "build/metadata-2/windows_${{ matrix.public_arch }}/flashgate-mcp.exe"
+          $firstHash = (Get-FileHash -LiteralPath $first -Algorithm SHA256).Hash
+          $secondHash = (Get-FileHash -LiteralPath $second -Algorithm SHA256).Hash
+          if ($firstHash -cne $secondHash) {
+            throw 'Repeated Windows metadata binary is not reproducible.'
+          }
+          $null = New-Item -ItemType Directory -Path build/audit -Force
+          $arguments = @(
+            '-C', '.', 'run', '-mod=vendor', './cmd/releaseaudit',
+            'scan-file',
+            '--file', $first,
+            '--report', "build/audit/metadata-windows-${{ matrix.public_arch }}-leak.json"
+          )
+          foreach ($value in @(
+            $env:GITHUB_WORKSPACE,
+            $env:RUNNER_TEMP,
+            $env:USERPROFILE,
+            $env:USERNAME,
+            $env:COMPUTERNAME
+          )) {
+            if (-not [string]::IsNullOrWhiteSpace($value)) {
+              $arguments += @('--forbidden', $value)
+            }
+          }
+          & go @arguments
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Windows metadata leak scan failed.'
+          }
+
+      - name: Upload Windows metadata binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: metadata-windows-${{ matrix.public_arch }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            build/metadata-1/windows_${{ matrix.public_arch }}/flashgate-mcp.exe
+            build/audit/metadata-windows-${{ matrix.public_arch }}-leak.json
+          if-no-files-found: error
+          retention-days: 14
+
+  linux-metadata:
+    name: Linux metadata (${{ matrix.public_arch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goarch: amd64
+            public_arch: x64
+            execute_argument: ''
+          - goarch: arm64
+            public_arch: arm64
+            execute_argument: --skip-execution
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Install ELF inspection tools
+        run: sudo apt-get update && sudo apt-get install --yes binutils file
+
+      - name: Resolve canonical source values
+        id: source
+        shell: bash
+        run: |
+          echo "epoch=$(git show -s --format=%ct HEAD)" >> "$GITHUB_OUTPUT"
+          echo "time=$(git show -s --format=%cI HEAD | xargs -I{} date -u -d '{}' '+%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
+
+      - name: Validate shared build-input fixtures
+        shell: bash
+        run: bash scripts/test-build-input-validation.sh
+
+      - name: Build Linux binary with metadata (build 1)
+        shell: bash
+        env:
+          SOURCE_DATE_EPOCH: ${{ steps.source.outputs.epoch }}
+        run: |
+          bash scripts/build.sh \
+            --goos linux \
+            --goarch '${{ matrix.goarch }}' \
+            --version "$METADATA_TEST_VERSION" \
+            --output "build/metadata-1/linux_${{ matrix.public_arch }}/flashgate-mcp"
+
+      - name: Validate Linux metadata
+        shell: bash
+        run: |
+          bash scripts/Test-LinuxMetadata.sh \
+            --binary "build/metadata-1/linux_${{ matrix.public_arch }}/flashgate-mcp" \
+            --expected-product-version "$METADATA_TEST_VERSION" \
+            --expected-file-version "$METADATA_TEST_FILE_VERSION" \
+            --expected-public-arch '${{ matrix.public_arch }}' \
+            --expected-goarch '${{ matrix.goarch }}' \
+            --expected-commit '${{ github.sha }}' \
+            --expected-source-time '${{ steps.source.outputs.time }}' \
+            --expected-modified false \
+            ${{ matrix.execute_argument }}
+
+      - name: Build Linux binary with metadata (build 2)
+        shell: bash
+        env:
+          SOURCE_DATE_EPOCH: ${{ steps.source.outputs.epoch }}
+        run: |
+          bash scripts/build.sh \
+            --goos linux \
+            --goarch '${{ matrix.goarch }}' \
+            --version "$METADATA_TEST_VERSION" \
+            --output "build/metadata-2/linux_${{ matrix.public_arch }}/flashgate-mcp"
+
+      - name: Compare and leak-scan Linux metadata binary
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          first="build/metadata-1/linux_${{ matrix.public_arch }}/flashgate-mcp"
+          second="build/metadata-2/linux_${{ matrix.public_arch }}/flashgate-mcp"
+          cmp --silent "$first" "$second"
+          mkdir -p build/audit
+          arguments=(
+            -C . run -mod=vendor ./cmd/releaseaudit
+            scan-file
+            --file "$first"
+            --report "build/audit/metadata-linux-${{ matrix.public_arch }}-leak.json"
+          )
+          for value in \
+            "$GITHUB_WORKSPACE" \
+            "$RUNNER_TEMP" \
+            "$HOME" \
+            "$USER" \
+            "$(hostname)"; do
+            [[ -z "$value" ]] || arguments+=(--forbidden "$value")
+          done
+          go "${arguments[@]}"
+
+      - name: Upload Linux metadata binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: metadata-linux-${{ matrix.public_arch }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            build/metadata-1/linux_${{ matrix.public_arch }}/flashgate-mcp
+            build/audit/metadata-linux-${{ matrix.public_arch }}-leak.json
+          if-no-files-found: error
+          retention-days: 14

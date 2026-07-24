@@ -28,6 +28,12 @@ The format follows the spirit of [Keep a Changelog](https://keepachangelog.com/)
 
 ### Added
 
+- Added one canonical build-information model and embedded machine-readable manifest for compact and verbose CLI identity, Windows resources, Linux Go/ELF metadata, and release artifacts.
+- Added deterministic Windows x64/ARM64 `VERSIONINFO` and the Font Awesome-based FlashGate application icon, with vendored resource tooling and third-party notices.
+- Added native Linux x64 and cross-compiled Linux ARM64 metadata validation, including Go/VCS information, ELF headers and Go build IDs.
+- Added deterministic Windows ZIP and Linux TAR.GZ artifacts for x64 and ARM64; every release matrix path now builds twice and gates upload on exact contents, SHA-256, binary/archive/checksum/inventory reproducibility, and machine-readable host/credential leak checks.
+- Added tag-gated release and metadata-regression workflows plus permanent build, validation, and decision documentation.
+- Added one shared SemVer/`SOURCE_DATE_EPOCH` fixture contract, linked-worktree-aware Bash builds, fail-closed native validation roots, and manifest-verified Git inventory snapshots with traversal- and special-entry-safe TAR extraction.
 - Added `scripts/Test-GoCoverage.ps1`, separate Windows/Linux text, HTML, profile, log, and JSON coverage reports, 14-day per-platform CI artifacts, README guidance, and `docs/development/code-coverage.md`.
 - Sprint 3.45d adds the development-only `cmd/benchmark` STDIO runner, Win32 and Linux procfs process metrics, ten machine-readable reference workflows, result schema `flashgate-benchmark/v1`, local budget evaluation, and diagnostic PowerShell/Bash launch scripts. Authoritative platform baselines use a separate two-phase prebuilt controller after Windows and native Linux preparation on the same clean implementation commit.
 - Sprint 3.45a adds explicit `TextContent` and `CallToolResult` protocol DTOs, a strict project-local decoder with legacy unwrapped negative fixtures, full success/error wire tests, and reproducible tool-result serialization benchmarks.

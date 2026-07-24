@@ -1,0 +1,36 @@
+# Third-party notices
+
+This file records third-party components and assets distributed with or used
+to build FlashGate MCP.
+
+## Font Awesome Free
+
+- Component: `bolt-lightning` icon, Classic Solid
+- Version: `7.2.0`
+- Project: Font Awesome Free by Fonticons, Inc.
+- Source: `FortAwesome/Font-Awesome`, path `svgs/solid/bolt-lightning.svg`
+- License: Creative Commons Attribution 4.0 International (`CC BY 4.0`)
+- License text: <https://creativecommons.org/licenses/by/4.0/>
+- Copyright: Copyright 2026 Fonticons, Inc.
+
+The attribution and CC BY 4.0 license apply to the unmodified upstream
+`assets/branding/fontawesome-bolt-lightning-solid.svg` and to the derived
+`assets/branding/flashgate.ico`. The SVG retains its embedded Font Awesome
+attribution; the ICO is a deterministic raster derivative of that SVG.
+
+## goversioninfo
+
+- Module: `github.com/josephspurrier/goversioninfo`
+- Version: `v1.7.0`
+- Purpose: generation of Windows `VERSIONINFO` and icon resources
+- License: MIT
+
+## rsrc
+
+- Module: `github.com/akavel/rsrc`
+- Version: resolved through the pinned `goversioninfo` dependency
+- Purpose: Windows COFF resource generation
+- License: MIT
+
+The exact Go dependency graph and checksums are recorded in `go.mod`,
+`go.sum`, and `vendor/modules.txt`.
